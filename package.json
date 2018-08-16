@@ -1,0 +1,27 @@
+{
+	"name": "odin-contracts",
+	"version": "1.0.0",
+	"description": "",
+	"main": "truffle-config.js",
+	"directories": {
+		"test": "test"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/odintrade/odin-contracts.git"
+	},
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/odintrade/odin-contracts/issues"
+	},
+	"homepage": "https://github.com/odintrade/odin-contracts#readme",
+	"dependencies": {
+		"dotenv": "^6.0.0",
+		"openzeppelin-solidity": "1.10.0",
+		"truffle-hdwallet-provider": "0.0.5"
+	}
+}
