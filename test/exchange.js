@@ -91,6 +91,38 @@ contract("Exchange", function(accounts) {
 			assert.equal(web3.fromWei(depositEvent.amount.toNumber()), 0.5);
 		});
 	});
+
+	describe("withdraw", () => {
+		it("cannot withdraw before timelock's expiry", async () => {
+			await exchange.deposit(etherAddress, web3.toWei(0.5), {
+				value: web3.toWei(0.5)
+			});
+			await assertFail(
+				exchange.withdrawEmergency,
+				etherAddress,
+				web3.toWei(0.1)
+			);
+		});
+
+		it.only("should withdraw after timelock's expiry", async () => {
+			await exchange.setTimelock(3);
+			await exchange.deposit(etherAddress, web3.toWei(0.5), {
+				value: web3.toWei(0.5)
+			});
+
+			for (let i = 0; i < 5; i++) {
+				await web3.eth.sendTransaction({
+					from: accounts[1],
+					to: accounts[2],
+					value: web3.toWei(0.01)
+				});
+			}
+
+			assert.ok(
+				await exchange.withdrawEmergency(etherAddress, web3.toWei(0.1))
+			);
+		});
+	});
 });
 
 assertExchangeBalance = async (token, account, expectedBalance) => {
@@ -102,7 +134,7 @@ assertExchangeBalance = async (token, account, expectedBalance) => {
 
 assertFail = async (fn, ...args) => {
 	try {
-		assert.fail(await fn(args));
+		assert.fail(await fn(...args));
 	} catch (err) {
 		assert.equal(
 			err.message,

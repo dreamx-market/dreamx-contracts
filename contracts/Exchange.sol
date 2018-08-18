@@ -14,7 +14,7 @@ contract Exchange {
     mapping (address => mapping (address => uint)) public balances;
 
     event Deposit(address token, address user, uint amount, uint balance);
-	// event Withdraw(address token, address user, uint amount, uint balance);
+	event Withdraw(address token, address user, uint amount, uint balance);
 	// event Order(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, uint expires, uint nonce, address user, uint8 v, bytes32 r, bytes32 s);
 	// event Cancel(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, uint expires, uint nonce, address user, uint8 v, bytes32 r, bytes32 s);
 	// event Trade(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, address get, address give);
@@ -44,6 +44,7 @@ contract Exchange {
 	}
 
 	function deposit(address _token, uint _amount) public payable {
+		lastActivity[msg.sender] = block.number;
 		if (_token == 0) {
 			require(msg.value == _amount);
 			balances[0][msg.sender] = balances[0][msg.sender].add(msg.value);
