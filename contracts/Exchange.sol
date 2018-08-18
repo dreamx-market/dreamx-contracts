@@ -57,7 +57,17 @@ contract Exchange {
 
 	// function withdraw() public ownerOnly {}
 
-	// function withdrawEmergency() public {}
+	function withdrawEmergency(address _token, uint _amount) public {
+		require(block.number.sub(lastActivity[msg.sender]) > timelock);
+		require(balances[_token][msg.sender] >= _amount);
+	    balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
+	    if (_token == 0) {
+	      require(msg.sender.send(_amount));
+	    } else {
+	      require(StandardToken(_token).transfer(msg.sender, _amount));
+	    }
+	    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
+	}
 
 	// function trade() public ownerOnly {}
 }
