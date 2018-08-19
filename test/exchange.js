@@ -1,4 +1,5 @@
 require("dotenv").config();
+const eutil = require("ethereumjs-util");
 const Exchange = artifacts.require("Exchange");
 const Token = artifacts.require("Token");
 const name = process.env.TOKEN_NAME;
@@ -93,6 +94,37 @@ contract("Exchange", function(accounts) {
 	});
 
 	describe("withdraw", () => {
+		it.only("should withdraw if owner has user's signature for the operation", async () => {
+			await exchange.deposit(etherAddress, web3.toWei(0.5), {
+				value: web3.toWei(0.5)
+			});
+			await assertExchangeBalance(etherAddress, accounts[0], 0.5);
+
+			const nonce = Date.now();
+			const msg = web3.sha3(
+				exchange.address,
+				etherAddress,
+				web3.toWei(0.1),
+				accounts[0],
+				nonce
+			);
+			const signedMsg = web3.eth.sign(accounts[0], msg);
+			const { v, r, s } = eutil.fromRpcSig(signedMsg);
+
+			assert.ok(
+				await exchange.withdraw(
+					etherAddress,
+					web3.toWei(0.1),
+					accounts[0],
+					nonce,
+					v,
+					eutil.bufferToHex(r),
+					eutil.bufferToHex(s)
+				)
+			);
+			await assertExchangeBalance(etherAddress, accounts[0], 0);
+		});
+
 		it("cannot withdraw before timelock's expiry", async () => {
 			await exchange.deposit(etherAddress, web3.toWei(0.5), {
 				value: web3.toWei(0.5)
@@ -104,7 +136,7 @@ contract("Exchange", function(accounts) {
 			);
 		});
 
-		it.only("should withdraw after timelock's expiry", async () => {
+		it("should withdraw after timelock's expiry", async () => {
 			await exchange.setTimelock(3);
 			await exchange.deposit(etherAddress, web3.toWei(0.5), {
 				value: web3.toWei(0.5)

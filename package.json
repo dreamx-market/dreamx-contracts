@@ -21,6 +21,7 @@
 	"homepage": "https://github.com/odintrade/odin-contracts#readme",
 	"dependencies": {
 		"dotenv": "^6.0.0",
+		"ethereumjs-util": "^5.2.0",
 		"openzeppelin-solidity": "1.10.0",
 		"truffle-hdwallet-provider": "0.0.5"
 	}
