@@ -74,7 +74,7 @@ contract("Exchange", function(accounts) {
 
 			const depositEvent = depositWatcher.get()[0].args;
 			assert.equal(depositEvent.token, etherAddress);
-			assert.equal(depositEvent.user, accounts[0]);
+			assert.equal(depositEvent.account, accounts[0]);
 			assert.equal(web3.fromWei(depositEvent.amount.toNumber()), 0.5);
 		});
 
@@ -90,29 +90,36 @@ contract("Exchange", function(accounts) {
 
 			const depositEvent = depositWatcher.get()[0].args;
 			assert.equal(depositEvent.token, token.address);
-			assert.equal(depositEvent.user, accounts[0]);
+			assert.equal(depositEvent.account, accounts[0]);
 			assert.equal(web3.fromWei(depositEvent.amount.toNumber()), 0.5);
 		});
 	});
 
 	describe("withdraw", () => {
-		it.only("should withdraw if owner has user's signature for the operation", async () => {
+		beforeEach(async () => {
 			await exchange.deposit(etherAddress, web3.toWei(0.5), {
 				value: web3.toWei(0.5)
 			});
 			await assertExchangeBalance(etherAddress, accounts[0], 0.5);
+		});
+
+		it("should withdraw if owner has user's signature for the operation", async () => {
+			const feeAccount = await exchange.feeAccount.call();
+			assert.equal(feeAccount, accounts[0]);
 
 			const token = etherAddress;
 			const amount = web3.toWei(0.2);
 			const account = accounts[0];
 			const nonce = Date.now();
+			const fee = web3.toWei(0.05);
 
 			const msg = Web3Utils.soliditySha3(
 				exchange.address,
 				token,
 				amount,
 				account,
-				nonce
+				nonce,
+				fee
 			);
 			const signedMsg = web3.eth.sign(account, msg);
 			const { v, r, s } = eutil.fromRpcSig(signedMsg);
@@ -124,7 +131,8 @@ contract("Exchange", function(accounts) {
 				nonce,
 				v,
 				eutil.bufferToHex(r),
-				eutil.bufferToHex(s)
+				eutil.bufferToHex(s),
+				fee
 			);
 
 			assert.ok(
@@ -142,9 +150,6 @@ contract("Exchange", function(accounts) {
 		});
 
 		it("cannot withdraw before timelock's expiry", async () => {
-			await exchange.deposit(etherAddress, web3.toWei(0.5), {
-				value: web3.toWei(0.5)
-			});
 			await assertFail(
 				exchange.withdrawEmergency,
 				etherAddress,

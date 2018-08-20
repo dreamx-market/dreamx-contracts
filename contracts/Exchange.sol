@@ -17,7 +17,6 @@ contract Exchange {
 
     event Deposit(address token, address account, uint amount, uint balance);
 	event Withdraw(address token, address account, uint amount, uint balance);
-	// event Order(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, uint expires, uint nonce, address account, uint8 v, bytes32 r, bytes32 s);
 	// event Trade(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, address get, address give);
 
 	modifier ownerOnly {
@@ -58,6 +57,7 @@ contract Exchange {
 	}
 
 	function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s) public ownerOnly returns (bytes32) {
+		lastActivity[msg.sender] = block.number;
 		bytes32 hash = keccak256(abi.encodePacked(this, _token, _amount, _account, _nonce));
 		require(!withdrawn[hash]);
 		require(recover(hash, v, r, s) == msg.sender);
@@ -79,6 +79,7 @@ contract Exchange {
 
 	function withdrawEmergency(address _token, uint _amount) public {
 		require(block.number.sub(lastActivity[msg.sender]) > timelock);
+		lastActivity[msg.sender] = block.number;
 		require(balances[_token][msg.sender] >= _amount);
 	    balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
 	    if (_token == 0) {
