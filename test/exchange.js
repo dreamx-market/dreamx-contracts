@@ -1,5 +1,7 @@
 require("dotenv").config();
+const { keccak_256 } = require("js-sha3");
 const eutil = require("ethereumjs-util");
+const Web3Utils = require("web3-utils");
 const Exchange = artifacts.require("Exchange");
 const Token = artifacts.require("Token");
 const name = process.env.TOKEN_NAME;
@@ -100,29 +102,43 @@ contract("Exchange", function(accounts) {
 			});
 			await assertExchangeBalance(etherAddress, accounts[0], 0.5);
 
+			const token = etherAddress;
+			const amount = web3.toWei(0.2);
+			const account = accounts[0];
 			const nonce = Date.now();
-			const msg = web3.sha3(
+
+			const msg = Web3Utils.soliditySha3(
 				exchange.address,
-				etherAddress,
-				web3.toWei(0.1),
-				accounts[0],
+				token,
+				amount,
+				account,
 				nonce
 			);
-			const signedMsg = web3.eth.sign(accounts[0], msg);
+			const signedMsg = web3.eth.sign(account, msg);
 			const { v, r, s } = eutil.fromRpcSig(signedMsg);
+
+			const res = await exchange.withdraw.call(
+				etherAddress,
+				amount,
+				account,
+				nonce,
+				v,
+				eutil.bufferToHex(r),
+				eutil.bufferToHex(s)
+			);
 
 			assert.ok(
 				await exchange.withdraw(
 					etherAddress,
-					web3.toWei(0.1),
-					accounts[0],
+					amount,
+					account,
 					nonce,
 					v,
 					eutil.bufferToHex(r),
 					eutil.bufferToHex(s)
 				)
 			);
-			await assertExchangeBalance(etherAddress, accounts[0], 0);
+			await assertExchangeBalance(etherAddress, accounts[0], 0.3);
 		});
 
 		it("cannot withdraw before timelock's expiry", async () => {
