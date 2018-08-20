@@ -77,12 +77,6 @@ contract Exchange {
 	    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}
 
-	function recover(bytes32 _hash, uint8 v, bytes32 r, bytes32 s) public pure returns (address) {
-	    bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-	    bytes32 hash = keccak256(abi.encodePacked(prefix, _hash));
-	    return ecrecover(hash, v, r, s);
-	}
-
 	function withdrawEmergency(address _token, uint _amount) public {
 		require(block.number.sub(lastActivity[msg.sender]) > timelock);
 		lastActivity[msg.sender] = block.number;
@@ -96,14 +90,36 @@ contract Exchange {
 	    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}
 
-	// function trade() public ownerOnly {
-	// 	// message authentication
-	// 	// order availability check
-	// 	// fee limits
-	// 	// balance check
-	// 	// trade
-	// 	// update order's availability
-	// 	// update last activity
-	// }
+	function trade(address[] _addresses, uint[] _uints, bool _sell) public ownerOnly returns (bytes32) {
+		/*
+			_addresses[0] == maker
+			_addresses[1] == taker
+			_addresses[2] == token
+			_uints[0] == price
+			_uints[1] == amount
+			_uints[2] == expiry
+			_uints[3] == makerNonce
+			_uints[4] == fillAmount
+			_uints[5] == takerNonce
+			_uints[6] == makerFee
+			_uints[7] == takerFee
+		*/
+		lastActivity[_addresses[0]] = block.number;
+		lastActivity[_addresses[1]] = block.number;
+		bytes32 order = keccak256(abi.encodePacked(this, _addresses[0], _sell, _addresses[2], _uints[0], _uints[1], _uints[2], _uints[3], _uints[6]));
+		return order;
+		// message authentication
+		// order availability check
+		// fee limits
+		// balance check
+		// trade
+		// update order's availability
+	}
+
+	function recover(bytes32 _hash, uint8 v, bytes32 r, bytes32 s) public pure returns (address) {
+	    bytes memory prefix = "\x19Ethereum Signed Message:\n32";
+	    bytes32 hash = keccak256(abi.encodePacked(prefix, _hash));
+	    return ecrecover(hash, v, r, s);
+	}
 }
 
