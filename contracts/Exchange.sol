@@ -10,8 +10,9 @@ contract Exchange {
     address public feeAccount;
 	uint public timelock;
 
-	mapping (address => uint256) public lastActivity;
+	mapping (address => uint) public lastActivity;
     mapping (address => mapping (address => uint)) public balances;
+    mapping (bytes32 => uint) public orderFills;
     mapping (bytes32 => bool) public withdrawn;
     mapping (bytes32 => bool) public traded;
 
@@ -95,6 +96,14 @@ contract Exchange {
 	    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}
 
-	// function trade() public ownerOnly {}
+	// function trade() public ownerOnly {
+	// 	// message authentication
+	// 	// order availability check
+	// 	// fee limits
+	// 	// balance check
+	// 	// trade
+	// 	// update order's availability
+	// 	// update last activity
+	// }
 }
 

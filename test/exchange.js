@@ -168,6 +168,71 @@ contract("Exchange", function(accounts) {
 			);
 		});
 	});
+
+	describe("trade", () => {
+		it.only("should trade 2 balances via filling an order", async () => {
+			await token.approve(exchange.address, web3.toWei(100));
+			await exchange.deposit(token.address, web3.toWei(100));
+			await assertExchangeBalance(token.address, accounts[0], 100);
+			await exchange.deposit(etherAddress, web3.toWei(1), {
+				from: accounts[1],
+				value: web3.toWei(1)
+			});
+			await assertExchangeBalance(etherAddress, accounts[1], 1);
+
+			const makerFee = 0;
+			const takerFee = 0;
+			const maker = accounts[0];
+			const taker = accounts[1];
+
+			const sell = true;
+			const price = web3.toWei(0.005);
+			const amount = web3.toWei(100);
+			const expiry = 100000;
+			const nonce = Date.now();
+			const order = Web3Utils.soliditySha3(
+				exchange.address,
+				maker,
+				sell,
+				token.address,
+				price,
+				amount,
+				expiry,
+				nonce,
+				makerFee
+			);
+			const signedOrder = web3.eth.sign(maker, order);
+			const makerSig = eutil.fromRpcSig(signedOrder);
+
+			const fillAmount = amount;
+			const fillMsg = Web3Utils.soliditySha3(
+				order,
+				taker,
+				fillAmount,
+				nonce
+			);
+			const signedFillMsg = web3.eth.sign(taker, fillMsg);
+			const takerSig = eutil.fromRpcSig(signedFillMsg);
+
+			await exchange.trade(
+				maker,
+				sell,
+				token.address,
+				price,
+				amount,
+				expiry,
+				nonce,
+				taker,
+				fillAmount,
+				nonce,
+				makerFee,
+				takerFee
+			);
+
+			await assertExchangeBalance(etherAddress, accounts[0], 0.5);
+			await assertExchangeBalance(token.address, accounts[1], 100);
+		});
+	});
 });
 
 assertExchangeBalance = async (token, account, expectedBalance) => {
