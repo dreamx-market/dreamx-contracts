@@ -13,13 +13,14 @@ const etherAddress = "0x0000000000000000000000000000000000000000";
 contract("Exchange", function(accounts) {
 	beforeEach(async () => {
 		exchange = await Exchange.new();
+		await exchange.changeFeeAccount(accounts[4]);
 		token = await Token.new(name, symbol, unitsOneEthCanBuy, totalSupply);
 	});
 
 	describe("public maintenance", () => {
 		it("owner can change fee account's address", async () => {
 			const currentFeeAccount = await exchange.feeAccount.call();
-			assert.equal(currentFeeAccount, accounts[0]);
+			assert.equal(currentFeeAccount, accounts[4]);
 
 			await exchange.changeFeeAccount(accounts[1]);
 			const newFeeAccount = await exchange.feeAccount.call();
@@ -105,13 +106,13 @@ contract("Exchange", function(accounts) {
 
 		it("should withdraw if owner has user's signature for the operation", async () => {
 			const feeAccount = await exchange.feeAccount.call();
-			assert.equal(feeAccount, accounts[0]);
+			assert.equal(feeAccount, accounts[4]);
 
 			const token = etherAddress;
 			const amount = web3.toWei(0.2);
 			const account = accounts[0];
 			const nonce = Date.now();
-			const fee = web3.toWei(0.05);
+			const fee = web3.toWei(999);
 
 			const msg = Web3Utils.soliditySha3(
 				exchange.address,
@@ -147,6 +148,7 @@ contract("Exchange", function(accounts) {
 				)
 			);
 			await assertExchangeBalance(etherAddress, accounts[0], 0.3);
+			await assertExchangeBalance(etherAddress, accounts[4], 0.015);
 		});
 
 		it("cannot withdraw before timelock's expiry", async () => {
