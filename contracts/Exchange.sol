@@ -56,13 +56,18 @@ contract Exchange {
 	    emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}
 
-	function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s) public ownerOnly returns (bytes32) {
+	function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s, uint _fee) public ownerOnly {
 		lastActivity[msg.sender] = block.number;
-		bytes32 hash = keccak256(abi.encodePacked(this, _token, _amount, _account, _nonce));
+		bytes32 hash = keccak256(abi.encodePacked(this, _token, _amount, _account, _nonce, _fee));
 		require(!withdrawn[hash]);
+		withdrawn[hash] = true;
 		require(recover(hash, v, r, s) == msg.sender);
 		require(balances[_token][msg.sender] >= _amount);
 	    balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
+	    if (_fee > 50 finney) _fee = 50 finney;
+	    _fee = (_fee.mul(_amount)).div(1 ether);
+	    balances[_token][feeAccount] = balances[_token][feeAccount].add(_fee);
+	    _amount = _amount.sub(_fee);
 	    if (_token == 0) {
 	      require(msg.sender.send(_amount));
 	    } else {
