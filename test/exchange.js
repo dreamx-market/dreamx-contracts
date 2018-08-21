@@ -237,14 +237,15 @@ contract("Exchange", function(accounts) {
 				eutil.bufferToHex(takerSig.r),
 				eutil.bufferToHex(takerSig.s)
 			];
+
 			await exchange.trade(addresses, uints, v, rs);
 
-			// await assertExchangeBalance(etherAddress, accounts[0], 0.4995);
-			// await assertExchangeBalance(token.address, accounts[0], 0);
-			// await assertExchangeBalance(token.address, accounts[1], 99.8);
-			// await assertExchangeBalance(etherAddress, accounts[1], 0);
-			// await assertExchangeBlanace(etherAddress, accounts[4], 0.0005);
-			// await assertExchangeBlanace(token.address, accounts[4], 0.2);
+			await assertExchangeBalance(etherAddress, accounts[0], 0.4995);
+			await assertExchangeBalance(token.address, accounts[0], 0);
+			await assertExchangeBalance(token.address, accounts[1], 99.8);
+			await assertExchangeBalance(etherAddress, accounts[1], 0.5);
+			await assertExchangeBalance(etherAddress, accounts[4], 0.0005);
+			await assertExchangeBalance(token.address, accounts[4], 0.2);
 		});
 	});
 });

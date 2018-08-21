@@ -117,20 +117,20 @@ contract Exchange {
 		require(recover(tradeHash, v[1], rs[2], rs[3]) == _addresses[1]);
 		require(!traded[tradeHash]);
 		traded[tradeHash] = true;
-		if (_uints[5] > 5 finney) _uints[5] = 10 finney;
-		if (_uints[6] > 5 finney) _uints[6] = 10 finney;
+		if (_uints[5] > 5 finney) _uints[5] = 5 finney;
+		if (_uints[6] > 5 finney) _uints[6] = 5 finney;
 		require(balances[_addresses[2]][_addresses[0]] >= _uints[2]);
 		require(balances[_addresses[3]][_addresses[1]] >= (_uints[1].div(_uints[0])).mul(_uints[2]));
 		require(orderFills[orderHash].add(_uints[2]) <= _uints[0]);
-		// uint takerFee = (_uints[6].mul((_uints[0].div(_uints[1])).mul(_uints[2]))).div(1 ether)
-		// balances[_addresses[2]][_addresses[0]] = balances[_addresses[2]][_addresses[0]].sub((_uints[0].div(_uints[1])).mul(_uints[2]));
-		// balances[_addresses[2]][_addresses[1]] = balances[_addresses[2]][_addresses[1]].add(((_uints[0].div(_uints[1])).mul(_uints[2])).sub(takerFee));
-		// balances[_addresses[2]][feeAccount] = balances[_addresses[2]][feeAccount].add(takerFee);
-		// uint makerFee = (_uints[5].mul(_uints[2])).div(1 ether)
-		// balances[_addresses[3]][_addresses[0]] = balances[_addresses[3]][_addresses[0]].add((_uints[5].mul(_uints[2])).sub(makerFee));
-		// balances[_addresses[3]][_addresses[1]] = balances[_addresses[3]][_addresses[1]].sub(_uints[5].mul(_uints[2]));
-		// balances[_addresses[3]][feeAccount] = balances[_addresses[3]][feeAccount].add(makerFee);
-		// orderFills[orderHash] = orderFills[orderHash].add()
+		uint takerFee = (_uints[6].mul(_uints[2])).div(1 ether);
+		balances[_addresses[2]][_addresses[0]] = balances[_addresses[2]][_addresses[0]].sub(_uints[2]);
+		balances[_addresses[2]][_addresses[1]] = balances[_addresses[2]][_addresses[1]].add((_uints[2]).sub(takerFee));
+		balances[_addresses[2]][feeAccount] = balances[_addresses[2]][feeAccount].add(takerFee);
+		uint makerFee = (_uints[5].mul((_uints[1].mul(_uints[2])).div(_uints[0]))).div(1 ether);
+		balances[_addresses[3]][_addresses[0]] = balances[_addresses[3]][_addresses[0]].add(((_uints[1].mul(_uints[2])).div(_uints[0])).sub(makerFee));
+		balances[_addresses[3]][_addresses[1]] = balances[_addresses[3]][_addresses[1]].sub((_uints[1].mul(_uints[2])).div(_uints[0]));
+		balances[_addresses[3]][feeAccount] = balances[_addresses[3]][feeAccount].add(makerFee);
+		orderFills[orderHash] = orderFills[orderHash].add(_uints[2]);
 	}
 
 	function recover(bytes32 _hash, uint8 v, bytes32 r, bytes32 s) public pure returns (address) {
