@@ -119,8 +119,9 @@ contract Exchange {
 		traded[tradeHash] = true;
 		if (_uints[6] > 5 finney) _uints[6] = 10 finney;
 		if (_uints[7] > 5 finney) _uints[7] = 10 finney;
-		// balance check
-		// volume check
+		require(balances[_addresses[2]][_addresses[0]] >= (_uints[0].div(_uints[1])).mul(_uints[2]));
+		require(balances[_addresses[3]][_addresses[1]] >= _uints[2]);
+		require(orderFills[orderHash].add(_uints[2]) <= _uints[0]);
 		// trade
 		// update order's availability
 	}
