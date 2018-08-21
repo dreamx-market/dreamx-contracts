@@ -170,7 +170,7 @@ contract("Exchange", function(accounts) {
 	});
 
 	describe("trade", () => {
-		it.only("should trade 2 balances via filling an order", async () => {
+		it.only("should do a balance swap when an order is filled", async () => {
 			await token.approve(exchange.address, web3.toWei(100));
 			await exchange.deposit(token.address, web3.toWei(100));
 			await assertExchangeBalance(token.address, accounts[0], 100);
@@ -180,8 +180,8 @@ contract("Exchange", function(accounts) {
 			});
 			await assertExchangeBalance(etherAddress, accounts[1], 1);
 
-			const makerFee = 0;
-			const takerFee = 0;
+			const makerFee = web3.toWei(0.001);
+			const takerFee = web3.toWei(0.002);
 			const maker = accounts[0];
 			const taker = accounts[1];
 
@@ -192,8 +192,8 @@ contract("Exchange", function(accounts) {
 			const nonce = Date.now();
 			const order = Web3Utils.soliditySha3(
 				exchange.address,
-				maker,
 				sell,
+				maker,
 				token.address,
 				price,
 				amount,
@@ -206,6 +206,7 @@ contract("Exchange", function(accounts) {
 
 			const fillAmount = amount;
 			const fillMsg = Web3Utils.soliditySha3(
+				exchange.address,
 				order,
 				taker,
 				fillAmount,
@@ -226,28 +227,21 @@ contract("Exchange", function(accounts) {
 				makerFee,
 				takerFee
 			];
-			const res = await exchange.trade.call(addresses, uints, sell);
+			const v = [makerSig.v, takerSig.v];
+			const rs = [
+				eutil.bufferToHex(makerSig.r),
+				eutil.bufferToHex(makerSig.s),
+				eutil.bufferToHex(takerSig.r),
+				eutil.bufferToHex(takerSig.s)
+			];
+			await exchange.trade(sell, addresses, uints, v, rs);
 
-			console.log(res);
-			console.log(order);
-
-			// await exchange.trade(
-			// 	maker,
-			// 	sell,
-			// 	token.address,
-			// 	price,
-			// 	amount,
-			// 	expiry,
-			// 	nonce,
-			// 	taker,
-			// 	fillAmount,
-			// 	nonce,
-			// 	makerFee,
-			// 	takerFee
-			// );
-
-			// await assertExchangeBalance(etherAddress, accounts[0], 0.5);
-			// await assertExchangeBalance(token.address, accounts[1], 100);
+			await assertExchangeBalance(etherAddress, accounts[0], 0.4995);
+			await assertExchangeBalance(token.address, accounts[0], 0);
+			await assertExchangeBalance(token.address, accounts[1], 99.8);
+			await assertExchangeBalance(etherAddress, accounts[1], 0);
+			await assertExchangeBlanace(etherAddress, accounts[4], 0.0005);
+			await assertExchangeBlanace(token.address, accounts[4], 0.2);
 		});
 	});
 });
@@ -257,6 +251,13 @@ assertExchangeBalance = async (token, account, expectedBalance) => {
 		(await exchange.balances.call(token, account)).toNumber()
 	);
 	assert.equal(balance, expectedBalance);
+};
+
+assertExchangeBalanceAtLeast = async (token, account, expectedBalance) => {
+	const balance = web3.fromWei(
+		(await exchange.balances.call(token, account)).toNumber()
+	);
+	assert.isAtLeast(balance, expectedBalance);
 };
 
 assertFail = async (fn, ...args) => {

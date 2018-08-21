@@ -18,7 +18,7 @@ contract Exchange {
 
     event Deposit(address token, address account, uint amount, uint balance);
 	event Withdraw(address token, address account, uint amount, uint balance);
-	// event Trade(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, address get, address give);
+	event Trade(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, address get, address give);
 
 	modifier ownerOnly {
 		require(msg.sender == owner);
@@ -90,27 +90,35 @@ contract Exchange {
 	    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}
 
-	function trade(address[] _addresses, uint[] _uints, bool _sell) public ownerOnly returns (bytes32) {
+	function trade(bool _sell, address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public ownerOnly {
 		/*
 			_addresses[0] == maker
 			_addresses[1] == taker
-			_addresses[2] == token
-			_uints[0] == price
-			_uints[1] == amount
+			_addresses[2] == makerToken
+			_addresses[3] == takerToken
+			_uints[0] == volume
+			_uints[1] == makerAmount
 			_uints[2] == expiry
 			_uints[3] == makerNonce
-			_uints[4] == fillAmount
+			_uints[4] == takerAmount
 			_uints[5] == takerNonce
 			_uints[6] == makerFee
 			_uints[7] == takerFee
+			v[0] == makerV
+			v[1] == takerV
+			rs[0]..[1] == makerR, makerS
+			rs[2]..[3] == takerR, takerS
 		*/
 		lastActivity[_addresses[0]] = block.number;
 		lastActivity[_addresses[1]] = block.number;
-		bytes32 order = keccak256(abi.encodePacked(this, _addresses[0], _sell, _addresses[2], _uints[0], _uints[1], _uints[2], _uints[3], _uints[6]));
-		return order;
-		// message authentication
-		// order availability check
-		// fee limits
+		bytes32 orderHash = keccak256(abi.encodePacked(this, _sell, _addresses[0], _addresses[2], _uints[0], _uints[1], _uints[2], _uints[3], _uints[6]));
+		require(recover(orderHash, v[0], rs[0], rs[1]) == _addresses[0]);
+		bytes32 tradeHash = keccak256(abi.encodePacked(this, orderHash, _addresses[1], _uints[4], _uints[5], _uints[7]));
+		require(recover(tradeHash, v[1], rs[2], rs[3]) == _addresses[1]);
+		require(!traded[tradeHash]);
+		traded[tradeHash] = true;
+		if (_uints[6] > 5 finney) _uints[6] = 10 finney;
+		if (_uints[7] > 5 finney) _uints[7] = 10 finney;
 		// balance check
 		// trade
 		// update order's availability
