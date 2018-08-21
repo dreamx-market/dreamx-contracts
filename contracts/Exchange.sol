@@ -90,20 +90,20 @@ contract Exchange {
 	    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}
 
-	function trade(bool _sell, address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public ownerOnly {
+	function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public ownerOnly {
 		/*
 			_addresses[0] == maker
 			_addresses[1] == taker
-			_addresses[2] == makerToken
-			_addresses[3] == takerToken
-			_uints[0] == volume
-			_uints[1] == makerAmount
-			_uints[2] == expiry
+			_addresses[2] == giveToken
+			_addresses[3] == takeToken
+			_uints[0] == giveAmount
+			_uints[1] == takeAmount
+			_uints[2] == amount
 			_uints[3] == makerNonce
-			_uints[4] == takerAmount
-			_uints[5] == takerNonce
-			_uints[6] == makerFee
-			_uints[7] == takerFee
+			_uints[4] == takerNonce
+			_uints[5] == makerFee
+			_uints[6] == takerFee
+			_uints[7] == expiry
 			v[0] == makerV
 			v[1] == takerV
 			rs[0]..[1] == makerR, makerS
@@ -111,15 +111,16 @@ contract Exchange {
 		*/
 		lastActivity[_addresses[0]] = block.number;
 		lastActivity[_addresses[1]] = block.number;
-		bytes32 orderHash = keccak256(abi.encodePacked(this, _sell, _addresses[0], _addresses[2], _uints[0], _uints[1], _uints[2], _uints[3], _uints[6]));
+		bytes32 orderHash = keccak256(abi.encodePacked(this, _addresses[0], _addresses[2], _uints[0], _addresses[3], _uints[1], _uints[3], _uints[5], _uints[7]));
 		require(recover(orderHash, v[0], rs[0], rs[1]) == _addresses[0]);
-		bytes32 tradeHash = keccak256(abi.encodePacked(this, orderHash, _addresses[1], _uints[4], _uints[5], _uints[7]));
+		bytes32 tradeHash = keccak256(abi.encodePacked(this, orderHash, _addresses[1], _uints[2], _uints[4], _uints[6]));
 		require(recover(tradeHash, v[1], rs[2], rs[3]) == _addresses[1]);
 		require(!traded[tradeHash]);
 		traded[tradeHash] = true;
 		if (_uints[6] > 5 finney) _uints[6] = 10 finney;
 		if (_uints[7] > 5 finney) _uints[7] = 10 finney;
 		// balance check
+		// volume check
 		// trade
 		// update order's availability
 	}
