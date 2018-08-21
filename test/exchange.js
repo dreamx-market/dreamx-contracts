@@ -187,7 +187,7 @@ contract("Exchange", function(accounts) {
 			const giveAmount = web3.toWei(100);
 			const takeToken = etherAddress;
 			const takeAmount = web3.toWei(0.005 * 100);
-			const amount = takeAmount;
+			const amount = giveAmount;
 			const expiry = 100000;
 			const makerNonce = Date.now();
 			const takerNonce = makerNonce;
