@@ -13,40 +13,50 @@ const etherAddress = "0x0000000000000000000000000000000000000000";
 contract("Exchange", function(accounts) {
 	beforeEach(async () => {
 		exchange = await Exchange.new();
-		await exchange.changeFeeAccount(accounts[4]);
+		await exchange.changeFeeCollector(accounts[4]);
+		await exchange.changeSuperOwner(accounts[9]);
 		token = await Token.new(name, symbol, unitsOneEthCanBuy, totalSupply);
 	});
 
 	describe("public maintenance", () => {
-		it("owner can change fee account's address", async () => {
-			const currentFeeAccount = await exchange.feeAccount.call();
-			assert.equal(currentFeeAccount, accounts[4]);
+		it("super owner can change fee account's address", async () => {
+			const currentFeeCollector = await exchange.feeCollector.call();
+			assert.equal(currentFeeCollector, accounts[4]);
 
-			await exchange.changeFeeAccount(accounts[1]);
-			const newFeeAccount = await exchange.feeAccount.call();
-			assert.equal(newFeeAccount, accounts[1]);
+			await exchange.changeFeeCollector(accounts[1], { from: accounts[9] });
+			const newFeeCollector = await exchange.feeCollector.call();
+			assert.equal(newFeeCollector, accounts[1]);
 		});
 
-		it("owner can change owner's address", async () => {
+		it("super owner can change owner's address", async () => {
 			const currentOwner = await exchange.owner.call();
 			assert.equal(currentOwner, accounts[0]);
 
-			await exchange.changeOwner(accounts[1]);
+			await exchange.changeOwner(accounts[1], { from: accounts[9] });
 			const newOwner = await exchange.owner.call();
 			assert.equal(newOwner, accounts[1]);
 		});
 
-		it("owner can change timelock duration", async () => {
+		it("super owner can change super owner's address", async () => {
+			const currentSuperOwner = await exchange.superOwner.call();
+			assert.equal(currentSuperOwner, accounts[9]);
+
+			await exchange.changeSuperOwner(accounts[1], { from: accounts[9] });
+			const newOwner = await exchange.superOwner.call();
+			assert.equal(newOwner, accounts[1]);
+		});
+
+		it("super owner can change timelock duration", async () => {
 			const currentDuration = await exchange.timelock.call();
 			assert.equal(currentDuration, 100000);
 
-			await exchange.setTimelock(1000000);
+			await exchange.setTimelock(1000000, { from: accounts[9] });
 			const newDuration = await exchange.timelock.call();
 			assert.equal(newDuration, 1000000);
 		});
 
 		it("timelock duration cannot exceed 1 million blocks", async () => {
-			assertFail(exchange.setTimelock, 1000001);
+			await assertFail(exchange.setTimelock, 1000001, { from: accounts[9] });
 		});
 	});
 
@@ -102,8 +112,8 @@ contract("Exchange", function(accounts) {
 		});
 
 		it("should withdraw if owner has user's signature for the operation", async () => {
-			const feeAccount = await exchange.feeAccount.call();
-			assert.equal(feeAccount, accounts[4]);
+			const feeCollector = await exchange.feeCollector.call();
+			assert.equal(feeCollector, accounts[4]);
 
 			const token = etherAddress;
 			const amount = web3.toWei(0.3);
@@ -129,7 +139,8 @@ contract("Exchange", function(accounts) {
 					nonce,
 					v,
 					eutil.bufferToHex(r),
-					eutil.bufferToHex(s)
+					eutil.bufferToHex(s),
+					fee
 				)
 			);
 			await assertExchangeBalance(etherAddress, accounts[0], 0.2);
@@ -145,7 +156,7 @@ contract("Exchange", function(accounts) {
 		});
 
 		it("should withdraw after timelock's expiry", async () => {
-			await exchange.setTimelock(3);
+			await exchange.setTimelock(3, { from: accounts[9] });
 			await exchange.deposit(etherAddress, web3.toWei(0.5), {
 				value: web3.toWei(0.5)
 			});
@@ -197,7 +208,6 @@ contract("Exchange", function(accounts) {
 				takeToken,
 				takeAmount,
 				makerNonce,
-				makerFee,
 				expiry
 			);
 			const signedOrder = web3.eth.sign(maker, order);
@@ -208,8 +218,7 @@ contract("Exchange", function(accounts) {
 				order,
 				taker,
 				amount,
-				takerNonce,
-				takerFee
+				takerNonce
 			);
 			const signedTrade = web3.eth.sign(taker, trade);
 			const takerSig = eutil.fromRpcSig(signedTrade);
