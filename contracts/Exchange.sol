@@ -59,7 +59,7 @@ contract Exchange {
 
 	function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s, uint _fee) public ownerOnly {
 		lastActivity[msg.sender] = block.number;
-		bytes32 hash = keccak256(abi.encodePacked(this, _token, _amount, _account, _nonce, _fee));
+		bytes32 hash = keccak256(abi.encodePacked(this, _token, _amount, _account, _nonce));
 		require(!withdrawn[hash]);
 		withdrawn[hash] = true;
 		require(recover(hash, v, r, s) == msg.sender);

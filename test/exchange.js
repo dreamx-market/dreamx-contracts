@@ -52,10 +52,7 @@ contract("Exchange", function(accounts) {
 
 	describe("read features", () => {
 		it("retrieves user's balance", async () => {
-			const balance = await exchange.balances.call(
-				token.address,
-				accounts[0]
-			);
+			const balance = await exchange.balances.call(token.address, accounts[0]);
 
 			assert.ok(balance);
 		});
@@ -119,8 +116,7 @@ contract("Exchange", function(accounts) {
 				token,
 				amount,
 				account,
-				nonce,
-				fee
+				nonce
 			);
 			const signedMsg = web3.eth.sign(account, msg);
 			const { v, r, s } = eutil.fromRpcSig(signedMsg);
@@ -133,8 +129,7 @@ contract("Exchange", function(accounts) {
 					nonce,
 					v,
 					eutil.bufferToHex(r),
-					eutil.bufferToHex(s),
-					fee
+					eutil.bufferToHex(s)
 				)
 			);
 			await assertExchangeBalance(etherAddress, accounts[0], 0.2);
@@ -170,7 +165,7 @@ contract("Exchange", function(accounts) {
 	});
 
 	describe("trade", () => {
-		it.only("should do a balance swap when an order is filled", async () => {
+		it("should do a balance swap when an order is filled", async () => {
 			await token.approve(exchange.address, web3.toWei(100));
 			await exchange.deposit(token.address, web3.toWei(100));
 			await assertExchangeBalance(token.address, accounts[0], 100);
