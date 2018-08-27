@@ -75,30 +75,30 @@ contract Exchange {
 		withdrawn[hash] = true;
 		require(recover(hash, v, r, s) == msg.sender);
 		require(balances[_token][msg.sender] >= _amount);
-	    balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
-	    if (_fee > 50 finney) _fee = 50 finney;
-	    _fee = (_fee.mul(_amount)).div(1 ether);
-	    balances[_token][feeCollector] = balances[_token][feeCollector].add(_fee);
-	    _amount = _amount.sub(_fee);
-	    if (_token == 0) {
-	      require(msg.sender.send(_amount));
-	    } else {
-	      require(StandardToken(_token).transfer(msg.sender, _amount));
-	    }
-	    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
+    balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
+    if (_fee > 50 finney) _fee = 50 finney;
+    _fee = (_fee.mul(_amount)).div(1 ether);
+    balances[_token][feeCollector] = balances[_token][feeCollector].add(_fee);
+    _amount = _amount.sub(_fee);
+    if (_token == 0) {
+      require(msg.sender.send(_amount));
+    } else {
+      require(StandardToken(_token).transfer(msg.sender, _amount));
+    }
+    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}
 
 	function withdrawEmergency(address _token, uint _amount) public {
 		require(block.number.sub(lastActivity[msg.sender]) > timelock);
 		lastActivity[msg.sender] = block.number;
 		require(balances[_token][msg.sender] >= _amount);
-	    balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
-	    if (_token == 0) {
-	      require(msg.sender.send(_amount));
-	    } else {
-	      require(StandardToken(_token).transfer(msg.sender, _amount));
-	    }
-	    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
+    balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
+    if (_token == 0) {
+      require(msg.sender.send(_amount));
+    } else {
+      require(StandardToken(_token).transfer(msg.sender, _amount));
+    }
+    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}
 
 	function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public ownerOnly {
