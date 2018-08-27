@@ -10,6 +10,7 @@ const etherAddress = "0x0000000000000000000000000000000000000000";
 contract("ExchangePure", function(accounts) {
 	beforeEach(async () => {
 		exchange = await Exchange.new();
+		await exchange.changeFeeCollector(accounts[9]);
 		token = await Token.new(name, symbol, unitsOneEthCanBuy, totalSupply);
 	});
 
@@ -49,7 +50,29 @@ contract("ExchangePure", function(accounts) {
 	});
 
 	describe("withdraw", () => {
-		it("can withdraw", async () => {});
+		it.only("can withdraw", async () => {
+			const withdrawWatcher = exchange.Withdraw();
+
+			await exchange.changeFee(2, web3.toWei(1));
+
+			await exchange.deposit(etherAddress, web3.toWei(0.5), {
+				value: web3.toWei(0.5),
+				from: accounts[0]
+			});
+
+			await assertExchangeBalance(etherAddress, accounts[0], 0.5);
+			await assertExchangeBalance(etherAddress, accounts[9], 0);
+
+			await exchange.withdraw(etherAddress, web3.toWei(0.5));
+
+			await assertExchangeBalance(etherAddress, accounts[0], 0);
+			await assertExchangeBalance(etherAddress, accounts[9], 0.025);
+
+			const withdrawEvent = withdrawWatcher.get()[0].args;
+			assert.equal(withdrawEvent.token, etherAddress);
+			assert.equal(withdrawEvent.account, accounts[0]);
+			assert.equal(web3.fromWei(withdrawEvent.amount.toNumber()), 0.5);
+		});
 	});
 });
 
