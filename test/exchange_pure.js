@@ -39,7 +39,7 @@ contract("ExchangePure", function(accounts) {
 
 			const depositEvent = depositWatcher.get()[0].args;
 			assert.equal(depositEvent.token, etherAddress);
-			assert.equal(depositEvent.account, accounts[0]);
+			assert.equal(depositEvent.user, accounts[0]);
 			assert.equal(web3.fromWei(depositEvent.amount.toNumber()), 0.5);
 		});
 
@@ -55,13 +55,13 @@ contract("ExchangePure", function(accounts) {
 
 			const depositEvent = depositWatcher.get()[0].args;
 			assert.equal(depositEvent.token, token.address);
-			assert.equal(depositEvent.account, accounts[0]);
+			assert.equal(depositEvent.user, accounts[0]);
 			assert.equal(web3.fromWei(depositEvent.amount.toNumber()), 0.5);
 		});
 	});
 
 	describe("withdraw", () => {
-		it.only("can withdraw", async () => {
+		it("can withdraw", async () => {
 			await token.transfer(accounts[1], web3.toWei(1));
 			const withdrawWatcher = exchange.Withdraw();
 
@@ -87,10 +87,16 @@ contract("ExchangePure", function(accounts) {
 
 			const withdrawEvent = withdrawWatcher.get()[0].args;
 			assert.equal(withdrawEvent.token, token.address);
-			assert.equal(withdrawEvent.account, accounts[1]);
+			assert.equal(withdrawEvent.user, accounts[1]);
 			assert.equal(web3.fromWei(withdrawEvent.amount.toNumber()), 1);
 		});
 	});
+
+	// it.only("tests", async () => {
+	// 	const balances = await exchange.getBalance.call(token.address, accounts[0]);
+	// 	balance = balances[0];
+	// 	console.log(balance);
+	// });
 });
 
 assertExchangeFee = async (type, value) => {
@@ -104,16 +110,14 @@ assertTokenBalance = async (account, value) => {
 };
 
 assertExchangeBalance = async (token, account, expectedBalance) => {
-	const balance = web3.fromWei(
-		(await exchange.balances.call(token, account)).toNumber()
-	);
+	const balances = await exchange.getBalance.call(token, account);
+	const balance = web3.fromWei(balances[0].toNumber());
 	assert.equal(balance, expectedBalance);
 };
 
 assertExchangeBalanceAtLeast = async (token, account, expectedBalance) => {
-	const balance = web3.fromWei(
-		(await exchange.balances.call(token, account)).toNumber()
-	);
+	const balances = await exchange.getBalance.call(token, account);
+	const balance = web3.fromWei(balances[0].toNumber());
 	assert.isAtLeast(balance, expectedBalance);
 };
 

@@ -13,14 +13,19 @@ contract ExchangePure {
 		Withdrawal
 	}
 
+	struct Balance {
+		uint available;
+		uint reserved;
+	}
+
   address public owner;
   address public feeCollector;
 
-  mapping (address => mapping (address => uint)) public balances;
+  mapping (address => mapping (address => Balance)) public balances;
   mapping (uint => uint) public fees;
 
-  event Deposit(address token, address account, uint amount, uint balance);
-	event Withdraw(address token, address account, uint amount, uint balance);
+  event Deposit(address token, address user, uint amount, uint balance);
+	event Withdraw(address token, address user, uint amount, uint balance);
 
 	modifier ownerOnly {
 		require(msg.sender == owner);
@@ -47,39 +52,44 @@ contract ExchangePure {
 
 	function deposit(address _token, uint _amount) public payable {
 		if (_token == 0) {
-		require(msg.value == _amount);
-		balances[0][msg.sender] = balances[0][msg.sender].add(msg.value);
+			require(msg.value == _amount);
+			balances[0][msg.sender].available = balances[0][msg.sender].available.add(msg.value);
     } else {
-		require(msg.value == 0);
-		balances[_token][msg.sender] = balances[_token][msg.sender].add(_amount);
-		require(StandardToken(_token).transferFrom(msg.sender, this, _amount));
+			require(msg.value == 0);
+			balances[_token][msg.sender].available = balances[_token][msg.sender].available.add(_amount);
+			require(StandardToken(_token).transferFrom(msg.sender, this, _amount));
     }
-    emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender]);
+    emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender].available);
 	}
 
 	function withdraw(address _token, uint _amount) public {
-		require(balances[_token][msg.sender] >= _amount);
-    balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
+		require(balances[_token][msg.sender].available >= _amount);
+    balances[_token][msg.sender].available = balances[_token][msg.sender].available.sub(_amount);
     uint fee = (fees[uint(Fee.Withdrawal)].mul(_amount)).div(1 ether);
-    balances[_token][feeCollector] = balances[_token][feeCollector].add(fee);
+    balances[_token][feeCollector].available = balances[_token][feeCollector].available.add(fee);
     if (_token == 0) {
       require(msg.sender.send(_amount.sub(fee)));
     } else {
       require(StandardToken(_token).transfer(msg.sender, _amount.sub(fee)));
     }
-    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
+    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender].available);
+	}
+
+	function getBalance(address _token, address _user) public view returns(uint available, uint reserved) {
+		available = balances[_token][_user].available;
+    reserved = balances[_token][_user].reserved;
 	}
 
 	// function placeOrder() public {}
 
+	// function cancelOrder() public {}
+
+	// function getOrderBook() public {}
+
+	// getOrder() public {}
+
 	// function matchOrder() private {}
 
 	// function trade() private {}
-
-	// function cancelOrder() public {}
-
-	// function getBalance() public {}
-
-	// function getOrderBook() public {}
 }
 
