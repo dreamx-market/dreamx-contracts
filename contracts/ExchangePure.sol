@@ -103,12 +103,6 @@ contract ExchangePure {
 
 	function createOrder(address _token, uint _amount, uint _price, bool _sell) public returns (uint) {
 		require(_token != 0);
-		if (_sell == true) {
-			require(balances[_token][msg.sender].available >= _amount);
-		} else {
-			uint etherAmount = _amount.mul(_price);
-			require(balances[0][msg.sender].available >= etherAmount);
-		}
 	}
 
 	// function matchOrder() private {}

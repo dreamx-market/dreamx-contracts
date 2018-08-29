@@ -83,10 +83,26 @@ contract("ExchangePure", function(accounts) {
 	});
 
 	describe("orders", () => {
-		it.only("cannot place order without sufficient tokens", async () => {
+		it("cannot place order without sufficient tokens", async () => {
 			const amount = web3.toWei(10);
 			const price = web3.toWei(0.3);
 			const sell = true;
+			await assertFail(
+				exchange.createOrder,
+				token.address,
+				amount,
+				price,
+				sell,
+				{
+					from: accounts[1]
+				}
+			);
+		});
+
+		it("cannot place order without sufficient ether", async () => {
+			const amount = web3.toWei(5);
+			const price = web3.toWei(1);
+			const sell = false;
 			await assertFail(
 				exchange.createOrder,
 				token.address,
