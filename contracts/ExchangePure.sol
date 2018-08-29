@@ -30,7 +30,7 @@ contract ExchangePure {
   }
 
   struct Market {
-  	mapping (uint => Order) orders;
+  	mapping (uint => Order) orderbook;
   	RedBlackTree.Tree prices;
     uint bid;
     uint ask;
@@ -124,7 +124,7 @@ contract ExchangePure {
 		uint id = ++lastOrderId;
 
 		Market storage market = markets[_token];
-		market.orders[id] = order;
+		market.orderbook[id] = order;
 
 		emit NewOrder(msg.sender, _token, id, _price, _amount, now, _sell);
 	}
@@ -134,14 +134,20 @@ contract ExchangePure {
 	// function trade() private {}
 
 	function getOrder(address _market, uint _orderId) public view returns (address user, uint amount, uint price, bool sell) {
-		Order memory order = markets[_market].orders[_orderId];
+		Order memory order = markets[_market].orderbook[_orderId];
 		user = order.user;
 		amount = order.amount;
 		price = order.price;
 		sell = order.sell;
 	}
 
-	// function getOrderBook() public {}
+	function getMarketInfo(address _market) public view returns (uint bid, uint ask, uint firstOrder, uint lastOrder) {
+		Market memory market = markets[_market];
+		bid = market.bid;
+		ask = market.ask;
+		firstOrder = market.firstOrder;
+		lastOrder = market.lastOrder;
+	}
 
 	// function cancelOrder() public {}
 }
