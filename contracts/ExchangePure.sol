@@ -1,8 +1,8 @@
 pragma solidity ^0.4.22;
 
-import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
-import 'openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
-import "./lib/RedBlackTree.sol";
+import './lib/ERC20.sol';
+import './lib/SafeMath.sol';
+import './lib/RedBlackTree.sol';
 
 contract ExchangePure {
 	using SafeMath for uint;
@@ -20,7 +20,7 @@ contract ExchangePure {
 	}
 
 	struct Order {
-    address owner;
+    address user;
     uint amount;
     uint price;
     bool sell;
@@ -45,8 +45,9 @@ contract ExchangePure {
   mapping (uint => uint) private fees;
   mapping (address => Market) private markets;
 
-  event Deposit(address token, address user, uint amount, uint balance);
-	event Withdraw(address token, address user, uint amount, uint balance);
+  event Deposit(address indexed token, address indexed user, uint amount, uint balance);
+	event Withdraw(address indexed token, address indexed user, uint amount, uint balance);
+	event NewOrder(address indexed user, address indexed token, uint indexed id, uint price, uint amount, uint timestamp, bool sell);
 
 	modifier ownerOnly {
 		require(msg.sender == owner);
@@ -78,7 +79,7 @@ contract ExchangePure {
     } else {
 			require(msg.value == 0);
 			balances[_token][msg.sender].available = balances[_token][msg.sender].available.add(_amount);
-			require(StandardToken(_token).transferFrom(msg.sender, this, _amount));
+			require(ERC20(_token).transferFrom(msg.sender, this, _amount));
     }
     emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender].available);
 	}
@@ -91,7 +92,7 @@ contract ExchangePure {
     if (_token == 0) {
       require(msg.sender.send(_amount.sub(fee)));
     } else {
-      require(StandardToken(_token).transfer(msg.sender, _amount.sub(fee)));
+      require(ERC20(_token).transfer(msg.sender, _amount.sub(fee)));
     }
     emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender].available);
 	}
@@ -101,15 +102,44 @@ contract ExchangePure {
     reserved = balances[_token][_user].reserved;
 	}
 
-	function createOrder(address _token, uint _amount, uint _price, bool _sell) public returns (uint) {
+	function createOrder(address _token, uint _amount, uint _price, bool _sell) public {
 		require(_token != 0);
+
+		if (_sell) {
+			balances[_token][msg.sender].available = balances[_token][msg.sender].available.sub(_amount);
+			balances[_token][msg.sender].reserved = balances[_token][msg.sender].reserved.add(_amount);
+		} else {
+			uint etherAmount = (_price.mul(_amount)).div(1 ether);
+			balances[0][msg.sender].available = balances[_token][msg.sender].available.sub(etherAmount);
+			balances[0][msg.sender].reserved = balances[_token][msg.sender].reserved.add(etherAmount);
+		}
+
+		Order memory order;
+		order.user = msg.sender;
+		order.amount = _amount;
+		order.price = _price;
+		order.sell = _sell;
+		order.timestamp = now;
+
+		uint id = ++lastOrderId;
+
+		Market storage market = markets[_token];
+		market.orders[id] = order;
+
+		emit NewOrder(msg.sender, _token, id, _price, _amount, now, _sell);
 	}
 
 	// function matchOrder() private {}
 
 	// function trade() private {}
 
-	// function getOrder() public {}
+	function getOrder(address _market, uint _orderId) public view returns (address user, uint amount, uint price, bool sell) {
+		Order memory order = markets[_market].orders[_orderId];
+		user = order.user;
+		amount = order.amount;
+		price = order.price;
+		sell = order.sell;
+	}
 
 	// function getOrderBook() public {}
 

@@ -116,6 +116,9 @@ contract("ExchangePure", function(accounts) {
 		});
 
 		it("can place an order", async () => {
+			await token.approve(exchange.address, web3.toWei(100));
+			await exchange.deposit(token.address, web3.toWei(100));
+
 			const orderWatcher = exchange.NewOrder();
 
 			const amount = web3.toWei(10);
@@ -129,20 +132,18 @@ contract("ExchangePure", function(accounts) {
 				sell
 			);
 
-			const order = await exchange.getOrder(orderId);
-			assert.equal(order.id, id);
-			assert.equal(order.amount, amount);
-			assert.equal(order.price, price);
-			assert.equal(order.sell, sell);
+			const orderEvent = orderWatcher.get()[0].args;
+			assert.equal(orderEvent.token, token.address);
+			assert.equal(orderEvent.user, accounts[0]);
+			assert.equal(orderEvent.sell, sell);
+			assert.equal(orderEvent.price, price);
+			assert.equal(orderEvent.amount, amount);
 
-			// const orderEvent = orderWatcher.get()[0].args;
-			// assert.equal(orderEvent.token, token.address);
-			// assert.equal(orderEvent.owner, accounts[0]);
-			// assert.equal(orderEvent.id, id);
-			// assert.equal(orderEvent.sell, sell);
-			// assert.equal(orderEvent.price, price);
-			// assert.equal(orderEvent.amount, amount);
-			// assert.equal(orderEvent.timestamp, timestamp);
+			const order = await exchange.getOrder(token.address, orderEvent.id);
+			assert.equal(order[0], accounts[0]);
+			assert.equal(order[1].toNumber(), amount);
+			assert.equal(order[2].toNumber(), price);
+			assert.equal(order[3], sell);
 		});
 	});
 });
