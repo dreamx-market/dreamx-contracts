@@ -31,7 +31,7 @@ contract ExchangePure {
 
   struct Market {
   	mapping (uint => Order) orders;
-  	RedBlackTree.Tree pricesTree;
+  	RedBlackTree.Tree prices;
     uint bid;
     uint ask;
     uint firstOrder;
@@ -43,8 +43,7 @@ contract ExchangePure {
   address private feeCollector;
   mapping (address => mapping (address => Balance)) private balances;
   mapping (uint => uint) private fees;
-  
-  mapping (address => Market) public markets;
+  mapping (address => Market) private markets;
 
   event Deposit(address token, address user, uint amount, uint balance);
 	event Withdraw(address token, address user, uint amount, uint balance);
@@ -102,7 +101,15 @@ contract ExchangePure {
     reserved = balances[_token][_user].reserved;
 	}
 
-	// function placeOrder() public {}
+	function createOrder(address _token, uint _amount, uint _price, bool _sell) public returns (uint) {
+		require(_token != 0);
+		if (_sell == true) {
+			require(balances[_token][msg.sender].available >= _amount);
+		} else {
+			uint etherAmount = _amount.mul(_price);
+			require(balances[0][msg.sender].available >= etherAmount);
+		}
+	}
 
 	// function matchOrder() private {}
 
