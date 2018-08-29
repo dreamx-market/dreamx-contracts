@@ -29,17 +29,22 @@ contract ExchangePure {
     uint prev;
   }
 
-  // struct Market {
-  // 	mapping (uint => Order) orderbook;
-  // }
+  struct Market {
+  	mapping (uint => Order) orders;
+  	RedBlackTree.Tree pricesTree;
+    uint bid;
+    uint ask;
+    uint firstOrder;
+    uint lastOrder;
+  }
 
+  uint private lastOrderId;
   address private owner;
   address private feeCollector;
-
   mapping (address => mapping (address => Balance)) private balances;
   mapping (uint => uint) private fees;
-  mapping (uint => Order) orders;
-  // mapping (address => Market) markets;
+  
+  mapping (address => Market) public markets;
 
   event Deposit(address token, address user, uint amount, uint balance);
 	event Withdraw(address token, address user, uint amount, uint balance);
