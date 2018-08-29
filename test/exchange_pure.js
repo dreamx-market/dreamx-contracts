@@ -15,17 +15,7 @@ contract("ExchangePure", function(accounts) {
 		token = await Token.new(name, symbol, unitsOneEthCanBuy, totalSupply);
 	});
 
-	describe("public maintenance", async () => {
-		it("can change fee", async () => {
-			await assertExchangeFee(withdrawalFee, 0);
-
-			await exchange.changeFee(withdrawalFee, web3.toWei(9999));
-
-			await assertExchangeFee(withdrawalFee, 0.05);
-		});
-	});
-
-	describe("deposit", () => {
+	describe("deposits", () => {
 		it("can deposit ether", async () => {
 			const depositWatcher = exchange.Deposit();
 
@@ -60,7 +50,7 @@ contract("ExchangePure", function(accounts) {
 		});
 	});
 
-	describe("withdraw", () => {
+	describe("withdrawals", () => {
 		it("can withdraw", async () => {
 			await token.transfer(accounts[1], web3.toWei(1));
 			const withdrawWatcher = exchange.Withdraw();
@@ -92,17 +82,21 @@ contract("ExchangePure", function(accounts) {
 		});
 	});
 
-	// it.only("tests", async () => {
-	// 	const balances = await exchange.getBalance.call(token.address, accounts[0]);
-	// 	balance = balances[0];
-	// 	console.log(balance);
-	// });
+	describe("orders", () => {
+		it("can place an order", async () => {
+			const token = token.address;
+			const amount = web3.toWei(10);
+			const price = web3.toWei(0.3);
+			const sell = true;
+			const orderId = await exchange.placeOrder(token, amount, price, sell);
+			const order = await exchange.getOrder(orderId);
+			assert.equal(order.id, id);
+			assert.equal(order.amount, amount);
+			assert.equal(order.price, price);
+			assert.equal(order.sell, sell);
+		});
+	});
 });
-
-assertExchangeFee = async (type, value) => {
-	const fee = web3.fromWei((await exchange.fees.call(type)).toNumber());
-	assert.equal(fee, value);
-};
 
 assertTokenBalance = async (account, value) => {
 	const balance = web3.fromWei((await token.balanceOf(account)).toNumber());

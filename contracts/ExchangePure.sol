@@ -6,6 +6,7 @@ import "./lib/RedBlackTree.sol";
 
 contract ExchangePure {
 	using SafeMath for uint;
+	using RedBlackTree for RedBlackTree.Tree;
 
 	enum Fee {
 		Maker,
@@ -18,11 +19,27 @@ contract ExchangePure {
 		uint reserved;
 	}
 
-  address public owner;
-  address public feeCollector;
+	struct Order {
+    address owner;
+    uint amount;
+    uint price;
+    bool sell;
+    uint timestamp;
+    uint next;
+    uint prev;
+  }
 
-  mapping (address => mapping (address => Balance)) public balances;
-  mapping (uint => uint) public fees;
+  // struct Market {
+  // 	mapping (uint => Order) orderbook;
+  // }
+
+  address private owner;
+  address private feeCollector;
+
+  mapping (address => mapping (address => Balance)) private balances;
+  mapping (uint => uint) private fees;
+  mapping (uint => Order) orders;
+  // mapping (address => Market) markets;
 
   event Deposit(address token, address user, uint amount, uint balance);
 	event Withdraw(address token, address user, uint amount, uint balance);
@@ -82,14 +99,14 @@ contract ExchangePure {
 
 	// function placeOrder() public {}
 
-	// function cancelOrder() public {}
-
-	// function getOrderBook() public {}
-
-	// getOrder() public {}
-
 	// function matchOrder() private {}
 
 	// function trade() private {}
+
+	// function getOrder() public {}
+
+	// function getOrderBook() public {}
+
+	// function cancelOrder() public {}
 }
 
