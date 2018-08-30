@@ -133,7 +133,7 @@ contract("ExchangePure", function(accounts) {
 			);
 
 			const orderEvent = orderWatcher.get()[0].args;
-			assert.equal(orderEvent.token, token.address);
+			assert.equal(orderEvent.market, token.address);
 			assert.equal(orderEvent.user, accounts[0]);
 			assert.equal(orderEvent.sell, sell);
 			assert.equal(orderEvent.price, price);
@@ -143,30 +143,45 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order[0], accounts[0]);
 			assert.equal(order[1].toNumber(), amount);
 			assert.equal(order[2].toNumber(), price);
-			assert.equal(order[3], sell);
+			assert.equal(order[5], sell);
 		});
 
-		it.only("inserts new order correctly", async () => {
+		it("can cancel orders", async () => {
 			await token.approve(exchange.address, web3.toWei(100));
 			await exchange.deposit(token.address, web3.toWei(100));
-
-			const orderWatcher = exchange.NewOrder();
-
 			await exchange.createOrder(token.address, 1, web3.toWei(1), true);
-			await exchange.createOrder(token.address, 1, web3.toWei(1.2), true);
-			await exchange.createOrder(token.address, 1, web3.toWei(1.1), true);
 
-			const order1 = await exchange.getOrder(token.address, 1);
-			const order2 = await exchange.getOrder(token.address, 2);
-			const order3 = await exchange.getOrder(token.address, 3);
+			let order;
+			order = await exchange.getOrder(token.address, 1);
+			assert.equal(order[0], accounts[0]);
 
-			assert.equal(order1[4].toNumber(), 0);
-			assert.equal(order1[5].toNumber(), 3);
-			assert.equal(order2[4].toNumber(), 3);
-			assert.equal(order2[5].toNumber(), 0);
-			assert.equal(order3[4].toNumber(), 1);
-			assert.equal(order3[5].toNumber(), 2);
+			await exchange.cancelOrder(token.address, 1);
+
+			order = await exchange.getOrder(token.address, 1);
+			assert.equal(order[0], "0x0000000000000000000000000000000000000000");
 		});
+
+		// it("sell orders are sorted correctly", async () => {
+		// 	await token.approve(exchange.address, web3.toWei(100));
+		// 	await exchange.deposit(token.address, web3.toWei(100));
+
+		// 	const orderWatcher = exchange.NewOrder();
+
+		// 	await exchange.createOrder(token.address, 1, web3.toWei(1), true);
+		// 	await exchange.createOrder(token.address, 1, web3.toWei(1.2), true);
+		// 	await exchange.createOrder(token.address, 1, web3.toWei(1.1), true);
+
+		//	const order1 = await exchange.getOrder(token.address, 1);
+		// 	const order2 = await exchange.getOrder(token.address, 2);
+		// 	const order3 = await exchange.getOrder(token.address, 3);
+
+		// 	assert.equal(order1[4].toNumber(), 0);
+		// 	assert.equal(order1[5].toNumber(), 3);
+		// 	assert.equal(order2[4].toNumber(), 3);
+		// 	assert.equal(order2[5].toNumber(), 0);
+		// 	assert.equal(order3[4].toNumber(), 1);
+		// 	assert.equal(order3[5].toNumber(), 2);
+		// });
 	});
 });
 

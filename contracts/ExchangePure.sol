@@ -47,7 +47,7 @@ contract ExchangePure {
 
   event Deposit(address indexed token, address indexed user, uint amount, uint balance);
 	event Withdraw(address indexed token, address indexed user, uint amount, uint balance);
-	event NewOrder(address indexed user, address indexed token, uint indexed id, uint price, uint amount, uint timestamp, bool sell);
+	event NewOrder(address indexed user, address indexed market, uint indexed id, uint price, uint amount, uint timestamp, bool sell);
 
 	modifier ownerOnly {
 		require(msg.sender == owner);
@@ -102,18 +102,19 @@ contract ExchangePure {
     reserved = balances[_token][_user].reserved;
 	}
 
-	function createOrder(address _token, uint _amount, uint _price, bool _sell) public {
-		require(_token != 0);
+	function createOrder(address _market, uint _amount, uint _price, bool _sell) public {
+		require(_market != 0);
 
 		if (_sell) {
-			balances[_token][msg.sender].available = balances[_token][msg.sender].available.sub(_amount);
-			balances[_token][msg.sender].reserved = balances[_token][msg.sender].reserved.add(_amount);
+			balances[_market][msg.sender].available = balances[_market][msg.sender].available.sub(_amount);
+			balances[_market][msg.sender].reserved = balances[_market][msg.sender].reserved.add(_amount);
 		} else {
 			uint etherAmount = (_price.mul(_amount)).div(1 ether);
-			balances[0][msg.sender].available = balances[_token][msg.sender].available.sub(etherAmount);
-			balances[0][msg.sender].reserved = balances[_token][msg.sender].reserved.add(etherAmount);
+			balances[0][msg.sender].available = balances[_market][msg.sender].available.sub(etherAmount);
+			balances[0][msg.sender].reserved = balances[_market][msg.sender].reserved.add(etherAmount);
 		}
 
+		Market storage market = markets[_market];
 		Order memory order;
 		order.user = msg.sender;
 		order.amount = _amount;
@@ -123,10 +124,11 @@ contract ExchangePure {
 
 		uint id = ++lastOrderId;
 
-		Market storage market = markets[_token];
+		// uint parent = market.prices.find(order.price);
+
 		market.orderbook[id] = order;
 
-		emit NewOrder(msg.sender, _token, id, _price, _amount, now, _sell);
+		emit NewOrder(msg.sender, _market, id, _price, _amount, now, _sell);
 	}
 
 	// function matchOrder() private {
@@ -141,6 +143,7 @@ contract ExchangePure {
 	// function trade() private {}
 
 	function getOrder(address _market, uint _orderId) public view returns (address user, uint amount, uint price, uint next, uint prev, bool sell) {
+		require(_market != 0);
 		Order memory order = markets[_market].orderbook[_orderId];
 		user = order.user;
 		amount = order.amount;
@@ -151,6 +154,7 @@ contract ExchangePure {
 	}
 
 	function getMarketInfo(address _market) public view returns (uint bid, uint ask, uint firstOrder, uint lastOrder) {
+		require(_market != 0);
 		Market memory market = markets[_market];
 		bid = market.bid;
 		ask = market.ask;
@@ -158,6 +162,9 @@ contract ExchangePure {
 		lastOrder = market.lastOrder;
 	}
 
-	// function cancelOrder() public {}
+	function cancelOrder(address _market, uint _orderId) public {
+		require(_market != 0);
+		delete markets[_market].orderbook[_orderId];
+	}
 }
 
