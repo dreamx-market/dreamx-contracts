@@ -145,6 +145,28 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order[2].toNumber(), price);
 			assert.equal(order[3], sell);
 		});
+
+		it.only("inserts new order correctly", async () => {
+			await token.approve(exchange.address, web3.toWei(100));
+			await exchange.deposit(token.address, web3.toWei(100));
+
+			const orderWatcher = exchange.NewOrder();
+
+			await exchange.createOrder(token.address, 1, web3.toWei(1), true);
+			await exchange.createOrder(token.address, 1, web3.toWei(1.2), true);
+			await exchange.createOrder(token.address, 1, web3.toWei(1.1), true);
+
+			const order1 = await exchange.getOrder(token.address, 1);
+			const order2 = await exchange.getOrder(token.address, 2);
+			const order3 = await exchange.getOrder(token.address, 3);
+
+			assert.equal(order1[4].toNumber(), 0);
+			assert.equal(order1[5].toNumber(), 3);
+			assert.equal(order2[4].toNumber(), 3);
+			assert.equal(order2[5].toNumber(), 0);
+			assert.equal(order3[4].toNumber(), 1);
+			assert.equal(order3[5].toNumber(), 2);
+		});
 	});
 });
 

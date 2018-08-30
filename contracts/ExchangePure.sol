@@ -129,15 +129,24 @@ contract ExchangePure {
 		emit NewOrder(msg.sender, _token, id, _price, _amount, now, _sell);
 	}
 
-	// function matchOrder() private {}
+	// function matchOrder() private {
+	// 	// obtain order with best bid/ask
+	// 	// loop through the orderbook until either bid/ask == 0 order.amount reaches 0 or there are no longer qualified orders
+	// 	// determine which order to be filled all the way
+	// 	// swap balances
+	// 	// update the orders
+	// 	// update bid/ask
+	// }
 
 	// function trade() private {}
 
-	function getOrder(address _market, uint _orderId) public view returns (address user, uint amount, uint price, bool sell) {
+	function getOrder(address _market, uint _orderId) public view returns (address user, uint amount, uint price, uint next, uint prev, bool sell) {
 		Order memory order = markets[_market].orderbook[_orderId];
 		user = order.user;
 		amount = order.amount;
 		price = order.price;
+		next = order.next;
+		prev = order.prev;
 		sell = order.sell;
 	}
 
