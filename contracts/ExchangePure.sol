@@ -184,7 +184,10 @@ contract ExchangePure {
 
 	function cancelOrder(address _market, uint64 _orderId) public {
 		require(_market != 0);
-		Order memory order = markets[_market].orderbook[_orderId];
+		Market storage market = markets[_market];
+		Order storage order = markets[_market].orderbook[_orderId];
+		Order storage next = markets[_market].orderbook[order.next];
+		Order storage prev = markets[_market].orderbook[order.prev];
 		require(order.user == msg.sender);
 
 		if (order.sell) {
@@ -196,6 +199,10 @@ contract ExchangePure {
 			balances[0][msg.sender].reserved = balances[0][msg.sender].reserved.sub(etherAmount);
 		}
 
+		next.prev = order.prev;
+		prev.next = order.next;
+
+		market.priceTree.remove(_orderId);
 		delete markets[_market].orderbook[_orderId];
 	}
 
