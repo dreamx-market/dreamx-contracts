@@ -146,19 +146,62 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order[5], sell);
 		});
 
-		it("can cancel orders", async () => {
+		it.only("can cancel orders", async () => {
 			await token.approve(exchange.address, web3.toWei(100));
 			await exchange.deposit(token.address, web3.toWei(100));
+
 			await exchange.createOrder(token.address, 1, web3.toWei(1), true);
+			await exchange.createOrder(token.address, 1, web3.toWei(1.2), true);
+			await exchange.createOrder(token.address, 1, web3.toWei(1.1), true);
+			await exchange.createOrder(token.address, 1, web3.toWei(0.9), true);
+			await exchange.createOrder(token.address, 1, web3.toWei(1.05), true);
 
-			let order;
-			order = await exchange.getOrder(token.address, 1);
-			assert.equal(order[0], accounts[0]);
+			let order1, order2, order3, order4, order5;
+			order1 = await exchange.getOrder(token.address, 1);
+			order2 = await exchange.getOrder(token.address, 2);
+			order3 = await exchange.getOrder(token.address, 3);
+			order4 = await exchange.getOrder(token.address, 4);
+			order5 = await exchange.getOrder(token.address, 5);
 
-			await exchange.cancelOrder(token.address, 1);
+			assert.equal(order1[3].toNumber(), 5);
+			assert.equal(order1[4].toNumber(), 4);
 
-			order = await exchange.getOrder(token.address, 1);
-			assert.equal(order[0], "0x0000000000000000000000000000000000000000");
+			assert.equal(order2[3].toNumber(), 0);
+			assert.equal(order2[4].toNumber(), 3);
+
+			assert.equal(order3[0], accounts[0]);
+			assert.equal(order3[3].toNumber(), 2);
+			assert.equal(order3[4].toNumber(), 5);
+
+			assert.equal(order4[3].toNumber(), 1);
+			assert.equal(order4[4].toNumber(), 0);
+
+			assert.equal(order5[3].toNumber(), 3);
+			assert.equal(order5[4].toNumber(), 1);
+
+			await exchange.cancelOrder(token.address, 3);
+
+			order1 = await exchange.getOrder(token.address, 1);
+			order2 = await exchange.getOrder(token.address, 2);
+			order3 = await exchange.getOrder(token.address, 3);
+			order4 = await exchange.getOrder(token.address, 4);
+			order5 = await exchange.getOrder(token.address, 5);
+
+			assert.equal(order1[3].toNumber(), 5);
+			assert.equal(order1[4].toNumber(), 4);
+
+			assert.equal(order2[3].toNumber(), 0);
+			assert.equal(order2[4].toNumber(), 5);
+
+			assert.equal(order3[0], "0x0000000000000000000000000000000000000000");
+			assert.equal(order3[3].toNumber(), 0);
+			assert.equal(order3[4].toNumber(), 0);
+
+			assert.equal(order4[3].toNumber(), 1);
+			assert.equal(order4[4].toNumber(), 0);
+
+			assert.equal(order5[3].toNumber(), 2);
+			assert.equal(order5[4].toNumber(), 1);
 		});
 
 		it("sell orders are sorted correctly", async () => {
