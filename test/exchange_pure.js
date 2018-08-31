@@ -11,7 +11,8 @@ const [makerFee, takerFee, withdrawalFee] = [0, 1, 2];
 contract("ExchangePure", function(accounts) {
 	beforeEach(async () => {
 		exchange = await Exchange.new();
-		await exchange.changeFeeCollector(accounts[9]);
+		const feeAccount = accounts[9];
+		await exchange.changeFeeCollector(feeAccount);
 		token = await Token.new(name, symbol, unitsOneEthCanBuy, totalSupply);
 	});
 
@@ -65,14 +66,14 @@ contract("ExchangePure", function(accounts) {
 			});
 
 			await assertExchangeBalance(token.address, accounts[1], 1);
-			await assertExchangeBalance(token.address, accounts[9], 0);
+			await assertExchangeBalance(token.address, feeAccount, 0);
 
 			await exchange.withdraw(token.address, web3.toWei(1), {
 				from: accounts[1]
 			});
 
 			await assertExchangeBalance(token.address, accounts[1], 0);
-			await assertExchangeBalance(token.address, accounts[9], 0.05);
+			await assertExchangeBalance(token.address, feeAccount, 0.05);
 			await assertTokenBalance(accounts[1], 0.95);
 
 			const withdrawEvent = withdrawWatcher.get()[0].args;
@@ -375,10 +376,15 @@ contract("ExchangePure", function(accounts) {
 		});
 	});
 
-	describe("matching", () => {
+	describe("trading", () => {
 		beforeEach(async () => {
 			await token.approve(exchange.address, web3.toWei(100));
 			await exchange.deposit(token.address, web3.toWei(100));
+
+			await assertExchangeBalance(token.address, feeAccount, 0);
+			await assertExchangeBalance(etherAddress, feeAccount, 0);
+			await exchange.changeFee(makerFee, web3.toWei(9999));
+			await exchange.changeFee(takerFee, web3.toWei(9999));
 
 			await exchange.createOrder(
 				token.address,
@@ -438,8 +444,10 @@ contract("ExchangePure", function(accounts) {
 			const order = await exchange.getOrder(token.address, 6);
 			assert.equal(order[0], accounts[1]);
 
-			await assertExchangeBalance(etherAddress, accounts[0], 0.9);
-			await assertExchangeBalance(token.address, accounts[1], 1);
+			await assertExchangeBalance(etherAddress, accounts[0], 0.855);
+			await assertExchangeBalance(token.address, accounts[1], 0.95);
+			await assertExchangeBalance(token.address, feeAccount, 0.05);
+			await assertExchangeBalance(etherAddress, feeAccount, 0.045);
 		});
 
 		// it("should match a buy order", async () => {});

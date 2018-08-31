@@ -229,7 +229,12 @@ contract ExchangePure {
 		}
 	}
 
-	// function trade() private {}
+	function trade(address user1, address user2, uint amount1, uint amount2) private {
+		// balances[_marketAddress][msg.sender].available = balances[_marketAddress][msg.sender].available.sub(_amount);
+		// balances[_marketAddress][msg.sender].reserved = balances[_marketAddress][msg.sender].reserved.add(_amount);
+		// balances[0][msg.sender].available = balances[0][msg.sender].available.sub(etherAmount);
+		// balances[0][msg.sender].reserved = balances[0][msg.sender].reserved.add(etherAmount);
+	}
 
 	function cancelOrder(address _marketAddress, uint64 _orderId) public {
 		require(_marketAddress != 0);
