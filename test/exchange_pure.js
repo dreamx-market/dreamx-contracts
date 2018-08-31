@@ -155,6 +155,7 @@ contract("ExchangePure", function(accounts) {
 			await exchange.createOrder(token.address, 1, web3.toWei(1.1), true);
 			await exchange.createOrder(token.address, 1, web3.toWei(0.9), true);
 			await exchange.createOrder(token.address, 1, web3.toWei(1.05), true);
+			await assertExchangeBalance(token.address, accounts[0], 95);
 
 			let order1, order2, order3, order4, order5;
 			order1 = await exchange.getOrder(token.address, 1);
@@ -180,6 +181,7 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order5[4].toNumber(), 1);
 
 			await exchange.cancelOrder(token.address, 3);
+			await assertExchangeBalance(token.address, accounts[0], 96);
 
 			order1 = await exchange.getOrder(token.address, 1);
 			order2 = await exchange.getOrder(token.address, 2);
