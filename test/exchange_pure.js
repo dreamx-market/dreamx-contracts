@@ -146,7 +146,7 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order[5], sell);
 		});
 
-		it("can cancel orders and preserve the order chain", async () => {
+		it.only("can cancel orders and preserve the order chain", async () => {
 			await token.approve(exchange.address, web3.toWei(100));
 			await exchange.deposit(token.address, web3.toWei(100));
 
@@ -412,21 +412,7 @@ contract("ExchangePure", function(accounts) {
 			);
 		});
 
-		// it('should match and fill multiple orders completely or partially', async () => {
-		// 	await exchange.deposit(etherAddress, web3.toWei(10), {
-		// 		value: web3.toWei(10),
-		// 		from: accounts[1]
-		// 	});
-
-		// 	await exchange.createOrder(
-		// 		token.address,
-		// 		web3.toWei(3),
-		// 		web3.toWei(1.05),
-		// 		true
-		// 	)
-		// })
-
-		it("should match and fill an order then create a rest order with the remaining volume", async () => {
+		it("should match a sell order", async () => {
 			const tradeWatcher = exchange.Trade();
 
 			await exchange.deposit(etherAddress, web3.toWei(10), {
@@ -455,6 +441,24 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, accounts[0], 0.9);
 			await assertExchangeBalance(token.address, accounts[1], 1);
 		});
+
+		// it("should match a buy order", async () => {});
+
+		// it('should match multiple sell orders', async () => {
+		// 	await exchange.deposit(etherAddress, web3.toWei(10), {
+		// 		value: web3.toWei(10),
+		// 		from: accounts[1]
+		// 	});
+
+		// 	await exchange.createOrder(
+		// 		token.address,
+		// 		web3.toWei(3),
+		// 		web3.toWei(1.05),
+		// 		true
+		// 	)
+		// })
+
+		// it("should match multiple buy orders", async () => {});
 	});
 });
 
