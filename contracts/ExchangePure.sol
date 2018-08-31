@@ -25,20 +25,20 @@ contract ExchangePure {
     uint price;
     bool sell;
     uint timestamp;
-    uint next;
-    uint prev;
+    uint64 next;
+    uint64 prev;
   }
 
   struct Market {
-  	mapping (uint => Order) orderbook;
-  	RedBlackTree.Tree prices;
+  	mapping (uint64 => Order) orderbook;
+  	RedBlackTree.Tree priceTree;
     uint bid;
     uint ask;
-    uint firstOrder;
-    uint lastOrder;
+    uint first;
+    uint last;
   }
 
-  uint private lastOrderId;
+  uint64 private lastId;
   address private owner;
   address private feeCollector;
   mapping (address => mapping (address => Balance)) private balances;
@@ -122,13 +122,33 @@ contract ExchangePure {
 		order.sell = _sell;
 		order.timestamp = now;
 
-		uint id = ++lastOrderId;
+		uint64 orderId = ++lastId;
 
-		// uint parent = market.prices.find(order.price);
+		uint64 parentId = market.priceTree.find(order.price);
+		Order storage parent = market.orderbook[parentId];
+		Order storage parentPrev = market.orderbook[parent.prev];
+		Order storage parentNext = market.orderbook[parent.next];
 
-		market.orderbook[id] = order;
+		if (parentId != 0) {
+			if (_price >= parent.price) {
+				order.next = parent.next;
+				order.prev = parentId;
+				parent.next = orderId;
+				parentNext.prev = orderId;
+			} else {
+				order.next = parentId;
+				order.prev = parent.prev;
+				parent.prev = orderId;
+				parentPrev.next = orderId;
+			}
+		} else {
+			order.next = 0;
+			order.prev = 0;
+		}
 
-		emit NewOrder(msg.sender, _market, id, _price, _amount, now, _sell);
+		market.priceTree.placeAfter(parentId, orderId, order.price);
+		market.orderbook[orderId] = order;
+		emit NewOrder(msg.sender, _market, orderId, _price, _amount, now, _sell);
 	}
 
 	// function matchOrder() private {
@@ -142,7 +162,7 @@ contract ExchangePure {
 
 	// function trade() private {}
 
-	function getOrder(address _market, uint _orderId) public view returns (address user, uint amount, uint price, uint next, uint prev, bool sell) {
+	function getOrder(address _market, uint64 _orderId) public view returns (address user, uint amount, uint price, uint64 next, uint64 prev, bool sell) {
 		require(_market != 0);
 		Order memory order = markets[_market].orderbook[_orderId];
 		user = order.user;
@@ -153,16 +173,16 @@ contract ExchangePure {
 		sell = order.sell;
 	}
 
-	function getMarketInfo(address _market) public view returns (uint bid, uint ask, uint firstOrder, uint lastOrder) {
+	function getMarketInfo(address _market) public view returns (uint bid, uint ask, uint first, uint last) {
 		require(_market != 0);
 		Market memory market = markets[_market];
 		bid = market.bid;
 		ask = market.ask;
-		firstOrder = market.firstOrder;
-		lastOrder = market.lastOrder;
+		first = market.first;
+		last = market.last;
 	}
 
-	function cancelOrder(address _market, uint _orderId) public {
+	function cancelOrder(address _market, uint64 _orderId) public {
 		require(_market != 0);
 		delete markets[_market].orderbook[_orderId];
 	}

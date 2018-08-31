@@ -4,6 +4,7 @@ const Migrations = artifacts.require("./Migrations.sol");
 const Token = artifacts.require("./Token.sol");
 const Exchange = artifacts.require("./Exchange.sol");
 const ExchangePure = artifacts.require("./ExchangePure.sol");
+const RBT = artifacts.require("./lib/RedBlackTree.sol");
 const name = process.env.TOKEN_NAME;
 const symbol = process.env.TOKEN_SYMBOL;
 const unitsOneEthCanBuy = process.env.TOKEN_RATE;
@@ -13,5 +14,7 @@ module.exports = function(deployer) {
 	deployer.deploy(Migrations);
 	deployer.deploy(Token, name, symbol, unitsOneEthCanBuy, totalSupply);
 	deployer.deploy(Exchange);
+	deployer.deploy(RBT);
+	deployer.link(RBT, ExchangePure);
 	deployer.deploy(ExchangePure);
 };
