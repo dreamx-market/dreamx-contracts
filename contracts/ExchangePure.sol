@@ -32,10 +32,10 @@ contract ExchangePure {
   struct Market {
   	mapping (uint64 => Order) orderbook;
   	RedBlackTree.Tree priceTree;
-    uint bid;
-    uint ask;
-    uint first;
-    uint last;
+    uint64 bid;
+    uint64 ask;
+    uint64 first;
+    uint64 last;
   }
 
   uint64 private lastId;
@@ -144,6 +144,12 @@ contract ExchangePure {
 		} else {
 			order.next = 0;
 			order.prev = 0;
+			market.first = orderId;
+		}
+
+		if (order.prev == 0) {
+			market.last = orderId;
+			market.bid = orderId;
 		}
 
 		market.priceTree.placeAfter(parentId, orderId, order.price);
@@ -173,7 +179,7 @@ contract ExchangePure {
 		sell = order.sell;
 	}
 
-	function getMarketInfo(address _market) public view returns (uint bid, uint ask, uint first, uint last) {
+	function getMarketInfo(address _market) public view returns (uint64 bid, uint64 ask, uint64 first, uint64 last) {
 		require(_market != 0);
 		Market memory market = markets[_market];
 		bid = market.bid;

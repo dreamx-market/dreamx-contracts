@@ -194,15 +194,20 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order5[3].toNumber(), 3);
 			assert.equal(order5[4].toNumber(), 1);
 
-			// bid
-			// ask
-			// first
-			// last
+			await assertMarket(token.address, 4, 0, 1, 4);
 		});
 
 		// it('buy orders are sorted correctly', async () => {})
 	});
 });
+
+assertMarket = async (market, bid, ask, first, last) => {
+	const marketInfo = await exchange.getMarketInfo(market);
+	assert.equal(marketInfo[0].toNumber(), bid);
+	assert.equal(marketInfo[1].toNumber(), ask);
+	assert.equal(marketInfo[2].toNumber(), first);
+	assert.equal(marketInfo[3].toNumber(), last);
+};
 
 assertTokenBalance = async (account, value) => {
 	const balance = web3.fromWei((await token.balanceOf(account)).toNumber());
