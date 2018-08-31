@@ -34,8 +34,6 @@ contract ExchangePure {
   	RedBlackTree.Tree priceTree;
     uint64 bid;
     uint64 ask;
-    uint64 first;
-    uint64 last;
   }
 
   uint64 private lastId;
@@ -144,11 +142,9 @@ contract ExchangePure {
 		} else {
 			order.next = 0;
 			order.prev = 0;
-			market.first = orderId;
 		}
 
 		if (order.prev == 0) {
-			market.last = orderId;
 			market.bid = orderId;
 		}
 
@@ -179,13 +175,11 @@ contract ExchangePure {
 		sell = order.sell;
 	}
 
-	function getMarketInfo(address _market) public view returns (uint64 bid, uint64 ask, uint64 first, uint64 last) {
+	function getMarketInfo(address _market) public view returns (uint64 bid, uint64 ask) {
 		require(_market != 0);
 		Market memory market = markets[_market];
 		bid = market.bid;
 		ask = market.ask;
-		first = market.first;
-		last = market.last;
 	}
 
 	function cancelOrder(address _market, uint64 _orderId) public {

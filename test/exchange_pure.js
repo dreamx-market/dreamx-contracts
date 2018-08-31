@@ -194,19 +194,51 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order5[3].toNumber(), 3);
 			assert.equal(order5[4].toNumber(), 1);
 
-			await assertMarket(token.address, 4, 0, 1, 4);
+			await assertMarket(token.address, 4, 0);
 		});
 
-		// it('buy orders are sorted correctly', async () => {})
+		it("buy orders are sorted correctly", async () => {
+			await token.approve(exchange.address, web3.toWei(100));
+			await exchange.deposit(token.address, web3.toWei(100));
+
+			const orderWatcher = exchange.NewOrder();
+
+			await exchange.createOrder(token.address, 1, web3.toWei(1), false);
+			await exchange.createOrder(token.address, 1, web3.toWei(1.2), false);
+			await exchange.createOrder(token.address, 1, web3.toWei(1.1), false);
+			await exchange.createOrder(token.address, 1, web3.toWei(0.9), false);
+			await exchange.createOrder(token.address, 1, web3.toWei(1.05), false);
+
+			const order1 = await exchange.getOrder(token.address, 1);
+			const order2 = await exchange.getOrder(token.address, 2);
+			const order3 = await exchange.getOrder(token.address, 3);
+			const order4 = await exchange.getOrder(token.address, 4);
+			const order5 = await exchange.getOrder(token.address, 5);
+
+			assert.equal(order1[3].toNumber(), 4);
+			assert.equal(order1[4].toNumber(), 5);
+
+			assert.equal(order2[3].toNumber(), 3);
+			assert.equal(order2[4].toNumber(), 0);
+
+			assert.equal(order3[3].toNumber(), 5);
+			assert.equal(order3[4].toNumber(), 2);
+
+			assert.equal(order4[3].toNumber(), 0);
+			assert.equal(order4[4].toNumber(), 1);
+
+			assert.equal(order5[3].toNumber(), 1);
+			assert.equal(order5[4].toNumber(), 3);
+
+			await assertMarket(token.address, 0, 2);
+		});
 	});
 });
 
-assertMarket = async (market, bid, ask, first, last) => {
+assertMarket = async (market, bid, ask) => {
 	const marketInfo = await exchange.getMarketInfo(market);
 	assert.equal(marketInfo[0].toNumber(), bid);
 	assert.equal(marketInfo[1].toNumber(), ask);
-	assert.equal(marketInfo[2].toNumber(), first);
-	assert.equal(marketInfo[3].toNumber(), last);
 };
 
 assertTokenBalance = async (account, value) => {
