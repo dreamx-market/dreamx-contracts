@@ -129,15 +129,29 @@ contract ExchangePure {
 
 		if (parentId != 0) {
 			if (_price >= parent.price) {
-				order.next = parent.next;
-				order.prev = parentId;
-				parent.next = orderId;
-				parentNext.prev = orderId;
+				if (_sell) {
+					order.next = parent.next;
+					order.prev = parentId;
+					parent.next = orderId;
+					parentNext.prev = orderId;
+				} else {
+					order.next = parentId;
+					order.prev = parent.prev;
+					parent.prev = orderId;
+					parentPrev.next = orderId;
+				}
 			} else {
-				order.next = parentId;
-				order.prev = parent.prev;
-				parent.prev = orderId;
-				parentPrev.next = orderId;
+				if (_sell) {
+					order.next = parentId;
+					order.prev = parent.prev;
+					parent.prev = orderId;
+					parentPrev.next = orderId;
+				} else {
+					order.next = parent.next;
+					order.prev = parentId;
+					parent.next = orderId;
+					parentNext.prev = orderId;
+				}
 			}
 		} else {
 			order.next = 0;
@@ -145,7 +159,11 @@ contract ExchangePure {
 		}
 
 		if (order.prev == 0) {
-			market.bid = orderId;
+			if (_sell) {
+				market.bid = orderId;
+			} else {
+				market.ask = orderId;
+			}
 		}
 
 		market.priceTree.placeAfter(parentId, orderId, order.price);
@@ -153,7 +171,7 @@ contract ExchangePure {
 		emit NewOrder(msg.sender, _market, orderId, _price, _amount, now, _sell);
 	}
 
-	// function matchOrder() private {
+	// function match() private {
 	// 	// obtain order with best bid/ask
 	// 	// loop through the orderbook until either bid/ask == 0 order.amount reaches 0 or there are no longer qualified orders
 	// 	// determine which order to be filled all the way
@@ -163,6 +181,11 @@ contract ExchangePure {
 	// }
 
 	// function trade() private {}
+
+	function cancelOrder(address _market, uint64 _orderId) public {
+		require(_market != 0);
+		delete markets[_market].orderbook[_orderId];
+	}
 
 	function getOrder(address _market, uint64 _orderId) public view returns (address user, uint amount, uint price, uint64 next, uint64 prev, bool sell) {
 		require(_market != 0);
@@ -180,11 +203,6 @@ contract ExchangePure {
 		Market memory market = markets[_market];
 		bid = market.bid;
 		ask = market.ask;
-	}
-
-	function cancelOrder(address _market, uint64 _orderId) public {
-		require(_market != 0);
-		delete markets[_market].orderbook[_orderId];
 	}
 }
 

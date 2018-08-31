@@ -161,7 +161,7 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order[0], "0x0000000000000000000000000000000000000000");
 		});
 
-		it.only("sell orders are sorted correctly", async () => {
+		it("sell orders are sorted correctly", async () => {
 			await token.approve(exchange.address, web3.toWei(100));
 			await exchange.deposit(token.address, web3.toWei(100));
 
