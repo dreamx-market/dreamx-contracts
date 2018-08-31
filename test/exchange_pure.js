@@ -374,6 +374,78 @@ contract("ExchangePure", function(accounts) {
 			await assertMarket(token.address, 0, 2);
 		});
 	});
+
+	describe("matching", () => {
+		beforeEach(async () => {
+			await token.approve(exchange.address, web3.toWei(100));
+			await exchange.deposit(token.address, web3.toWei(100));
+
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(1),
+				web3.toWei(1),
+				true
+			);
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(1),
+				web3.toWei(1.2),
+				true
+			);
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(1),
+				web3.toWei(1.1),
+				true
+			);
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(1),
+				web3.toWei(0.9),
+				true
+			);
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(1),
+				web3.toWei(1.05),
+				true
+			);
+		});
+
+		// it('should match and fill multiple orders completely or partially', async () => {
+		// 	await exchange.deposit(etherAddress, web3.toWei(10), {
+		// 		value: web3.toWei(10),
+		// 		from: accounts[1]
+		// 	});
+
+		// 	await exchange.createOrder(
+		// 		token.address,
+		// 		web3.toWei(3),
+		// 		web3.toWei(1.05),
+		// 		true
+		// 	)
+		// })
+
+		it("should match and fill an order then create a rest order", async () => {
+			await exchange.deposit(etherAddress, web3.toWei(10), {
+				value: web3.toWei(10),
+				from: accounts[1]
+			});
+
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(3),
+				web3.toWei(0.9),
+				true
+			);
+
+			const order = await exchange.getOrder(token.address, 6);
+			assert.equal(order[0], accounts[1]);
+
+			await assertExchangeBalance(etherAddress, accounts[0], 0.9);
+			await assertExchangeBalance(token.address, accounts[1], 1);
+		});
+	});
 });
 
 assertMarket = async (market, bid, ask) => {
