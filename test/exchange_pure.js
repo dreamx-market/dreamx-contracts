@@ -146,7 +146,7 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order[5], sell);
 		});
 
-		it.only("can cancel orders and preserve the order chain", async () => {
+		it("can cancel orders and preserve the order chain", async () => {
 			await token.approve(exchange.address, web3.toWei(100));
 			await exchange.deposit(token.address, web3.toWei(100));
 
@@ -412,7 +412,7 @@ contract("ExchangePure", function(accounts) {
 			);
 		});
 
-		it("should match a sell order", async () => {
+		it.only("should match a sell order", async () => {
 			const tradeWatcher = exchange.Trade();
 
 			await exchange.deposit(etherAddress, web3.toWei(10), {

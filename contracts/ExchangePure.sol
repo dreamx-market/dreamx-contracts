@@ -180,55 +180,54 @@ contract ExchangePure {
 		}
 	}
 
-	// function matchOrder(address _marketAddress, Market storage market, Order storage order, uint64 orderId) private {
-	// 	if (order.sell) {
-	// 		uint matchId = market.ask;
-	// 	} else {
-	// 		uint matchId = market.bid;
-	// 	}
+	function matchOrder(address _marketAddress, Market storage market, Order storage order, uint64 orderId) private {
+		if (order.sell) {
+			uint matchId = market.ask;
+		} else {
+			uint matchId = market.bid;
+		}
 
-	// 	Order storage match = market.orderbook[matchId];
+		Order storage match = market.orderbook[matchId];
 
-	// 	if (order.sell) {
-	// 		while (matchId != 0, order.amount != 0, order.price >= match.price) {
-	// 			// determine the order to be filled/ fill the orders
-	// 			// trade the balances
-	// 			// emit a trade event
-	// 			// remove the filled order
-	// 		}
-	// 		if (market.ask != matchId) {
- //        market.ask = matchId;
- //        Ask(_marketAddress, match.price);
- //    	}
-	// 	} else {
-	// 		while (matchId != 0, order.amount != 0, order.price <= match.price) {
-	// 			uint tradeAmountInTokens;
-	// 			if (order.amount >= match.amount) {
-	// 				tradeAmountInTokens = order.amount.sub(match.amount);
-	// 			} else {
-	// 				tradeAmountInTokens = match.amount.sub(order.amount);
-	// 			}
-	// 			uint tradeAmountInEther = (tradeAmountInTokens.mul(match.price)).div(1 ether);
-	// 			order.amount = order.amount.sub(tradeAmountInTokens);
-	// 			match.amount = match.amount.sub(tradeAmountInTokens);
+		if (order.sell) {
+			while (matchId != 0, order.amount != 0, order.price >= match.price) {
+				// determine the order to be filled/ fill the orders
+				// trade the balances
+				// emit a trade event
+				// remove the filled order
+			}
+			if (market.ask != matchId) {
+        market.ask = matchId;
+        Ask(_marketAddress, match.price);
+    	}
+		} else {
+			while (matchId != 0, order.amount != 0, order.price <= match.price) {
+				uint tradeAmountInTokens;
+				if (order.amount >= match.amount) {
+					tradeAmountInTokens = order.amount.sub(match.amount);
+				} else {
+					tradeAmountInTokens = match.amount.sub(order.amount);
+				}
+				uint tradeAmountInEther = (tradeAmountInTokens.mul(match.price)).div(1 ether);
+				order.amount = order.amount.sub(tradeAmountInTokens);
+				match.amount = match.amount.sub(tradeAmountInTokens);
 
-	// 			trade(order.user, match.user, tradeAmount, tradeAmountInEther);
+				trade(order.user, match.user, tradeAmount, tradeAmountInEther);
 
-	// 			if (match.amount != 0) {
-	// 				break;
-	// 			}
+				if (match.amount != 0) {
+					break;
+				}
 
-	// 			market.priceTree.remove(matchId);
-	// 			delete market.orderbook[matchId];
-	// 			matchId = match.next;
-	// 			Order storage match = market.orderbook[matchId];
-	// 		}
-	// 		if (market.bid != matchId) {
- //        market.bid = matchId;
- //        Bid(_marketAddress, match.price);
- //    	}
-	// 	}
-	// }
+				Order storage removed = remove(market, match, matchId);
+				matchId = removed.next;
+				Order storage match = market.orderbook[matchId];
+			}
+			if (market.bid != matchId) {
+        market.bid = matchId;
+        Bid(_marketAddress, match.price);
+    	}
+		}
+	}
 
 	// function trade() private {}
 
@@ -250,13 +249,14 @@ contract ExchangePure {
 		remove(market, order, _orderId);
 	}
 
-	function remove(Market storage market, Order storage order, uint64 _orderId) private {
+	function remove(Market storage market, Order storage order, uint64 _orderId) private returns (Order) {
 		Order storage next = market.orderbook[order.next];
 		Order storage prev = market.orderbook[order.prev];
 		next.prev = order.prev;
 		prev.next = order.next;		
 		market.priceTree.remove(_orderId);
 		delete market.orderbook[_orderId];
+		return order;
 	}
 
 	function getOrder(address _marketAddress, uint64 _orderId) public view returns (address user, uint amount, uint price, uint64 next, uint64 prev, bool sell) {
