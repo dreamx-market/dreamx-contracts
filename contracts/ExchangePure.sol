@@ -108,8 +108,8 @@ contract ExchangePure {
 			balances[_market][msg.sender].reserved = balances[_market][msg.sender].reserved.add(_amount);
 		} else {
 			uint etherAmount = (_price.mul(_amount)).div(1 ether);
-			balances[0][msg.sender].available = balances[_market][msg.sender].available.sub(etherAmount);
-			balances[0][msg.sender].reserved = balances[_market][msg.sender].reserved.add(etherAmount);
+			balances[0][msg.sender].available = balances[0][msg.sender].available.sub(etherAmount);
+			balances[0][msg.sender].reserved = balances[0][msg.sender].reserved.add(etherAmount);
 		}
 
 		Market storage market = markets[_market];
@@ -184,6 +184,18 @@ contract ExchangePure {
 
 	function cancelOrder(address _market, uint64 _orderId) public {
 		require(_market != 0);
+		Order memory order = markets[_market].orderbook[_orderId];
+		require(order.user == msg.sender);
+
+		if (order.sell) {
+			balances[_market][msg.sender].available = balances[_market][msg.sender].available.add(order.amount);
+			balances[_market][msg.sender].reserved = balances[_market][msg.sender].reserved.sub(order.amount);
+		} else {
+			uint etherAmount = (order.price.mul(order.amount)).div(1 ether);
+			balances[0][msg.sender].available = balances[0][msg.sender].available.add(etherAmount);
+			balances[0][msg.sender].reserved = balances[0][msg.sender].reserved.sub(etherAmount);
+		}
+
 		delete markets[_market].orderbook[_orderId];
 	}
 
