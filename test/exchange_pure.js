@@ -313,38 +313,39 @@ contract("ExchangePure", function(accounts) {
 		});
 
 		it("buy orders are sorted correctly", async () => {
-			await token.approve(exchange.address, web3.toWei(100));
-			await exchange.deposit(token.address, web3.toWei(100));
+			await exchange.deposit(etherAddress, web3.toWei(1), {
+				value: web3.toWei(1)
+			});
 
 			const orderWatcher = exchange.NewOrder();
 
 			await exchange.createOrder(
 				token.address,
-				web3.toWei(1),
+				web3.toWei(0.1),
 				web3.toWei(1),
 				false
 			);
 			await exchange.createOrder(
 				token.address,
-				web3.toWei(1),
+				web3.toWei(0.1),
 				web3.toWei(1.2),
 				false
 			);
 			await exchange.createOrder(
 				token.address,
-				web3.toWei(1),
+				web3.toWei(0.1),
 				web3.toWei(1.1),
 				false
 			);
 			await exchange.createOrder(
 				token.address,
-				web3.toWei(1),
+				web3.toWei(0.1),
 				web3.toWei(0.9),
 				false
 			);
 			await exchange.createOrder(
 				token.address,
-				web3.toWei(1),
+				web3.toWei(0.1),
 				web3.toWei(1.05),
 				false
 			);
