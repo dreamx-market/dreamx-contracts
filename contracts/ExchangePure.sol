@@ -45,7 +45,10 @@ contract ExchangePure {
 
   event Deposit(address indexed token, address indexed user, uint amount, uint balance);
 	event Withdraw(address indexed token, address indexed user, uint amount, uint balance);
-	event NewOrder(address indexed user, address indexed market, uint indexed id, uint price, uint amount, uint timestamp, bool sell);
+	event NewOrder(address indexed user, address indexed market, uint64 indexed id, uint price, uint amount, uint timestamp, bool sell);
+	event Ask(address indexed token, uint price);
+  event Bid(address indexed token, uint price);
+  event Trade(address indexed token, uint64 indexed bid, uint64 indexed ask, uint price, uint amount, uint timestamp, bool sell);
 
 	modifier ownerOnly {
 		require(msg.sender == owner);
@@ -100,19 +103,19 @@ contract ExchangePure {
     reserved = balances[_token][_user].reserved;
 	}
 
-	function createOrder(address _market, uint _amount, uint _price, bool _sell) public {
-		require(_market != 0);
+	function createOrder(address _marketAddress, uint _amount, uint _price, bool _sell) public {
+		require(_marketAddress != 0);
 
 		if (_sell) {
-			balances[_market][msg.sender].available = balances[_market][msg.sender].available.sub(_amount);
-			balances[_market][msg.sender].reserved = balances[_market][msg.sender].reserved.add(_amount);
+			balances[_marketAddress][msg.sender].available = balances[_marketAddress][msg.sender].available.sub(_amount);
+			balances[_marketAddress][msg.sender].reserved = balances[_marketAddress][msg.sender].reserved.add(_amount);
 		} else {
 			uint etherAmount = (_price.mul(_amount)).div(1 ether);
 			balances[0][msg.sender].available = balances[0][msg.sender].available.sub(etherAmount);
 			balances[0][msg.sender].reserved = balances[0][msg.sender].reserved.add(etherAmount);
 		}
 
-		Market storage market = markets[_market];
+		Market storage market = markets[_marketAddress];
 		Order memory order;
 		order.user = msg.sender;
 		order.amount = _amount;
@@ -127,72 +130,81 @@ contract ExchangePure {
 		Order storage parentPrev = market.orderbook[parent.prev];
 		Order storage parentNext = market.orderbook[parent.next];
 
-		if (parentId != 0) {
-			if (_price >= parent.price) {
-				if (_sell) {
-					order.next = parent.next;
-					order.prev = parentId;
-					parent.next = orderId;
-					parentNext.prev = orderId;
+		match(_marketAddress, market, order, orderId);
+
+		if (order.amount != 0) {
+			if (parentId != 0) {
+				if (_price >= parent.price) {
+					if (_sell) {
+						order.next = parent.next;
+						order.prev = parentId;
+						parent.next = orderId;
+						parentNext.prev = orderId;
+					} else {
+						order.next = parentId;
+						order.prev = parent.prev;
+						parent.prev = orderId;
+						parentPrev.next = orderId;
+					}
 				} else {
-					order.next = parentId;
-					order.prev = parent.prev;
-					parent.prev = orderId;
-					parentPrev.next = orderId;
+					if (_sell) {
+						order.next = parentId;
+						order.prev = parent.prev;
+						parent.prev = orderId;
+						parentPrev.next = orderId;
+					} else {
+						order.next = parent.next;
+						order.prev = parentId;
+						parent.next = orderId;
+						parentNext.prev = orderId;
+					}
 				}
 			} else {
+				order.next = 0;
+				order.prev = 0;
+			}
+
+			if (order.prev == 0) {
 				if (_sell) {
-					order.next = parentId;
-					order.prev = parent.prev;
-					parent.prev = orderId;
-					parentPrev.next = orderId;
+					market.bid = orderId;
 				} else {
-					order.next = parent.next;
-					order.prev = parentId;
-					parent.next = orderId;
-					parentNext.prev = orderId;
+					market.ask = orderId;
 				}
 			}
-		} else {
-			order.next = 0;
-			order.prev = 0;
-		}
 
-		if (order.prev == 0) {
-			if (_sell) {
-				market.bid = orderId;
-			} else {
-				market.ask = orderId;
-			}
+			market.priceTree.placeAfter(parentId, orderId, order.price);
+			market.orderbook[orderId] = order;
+			emit NewOrder(msg.sender, _marketAddress, orderId, _price, _amount, now, _sell);
 		}
-
-		market.priceTree.placeAfter(parentId, orderId, order.price);
-		market.orderbook[orderId] = order;
-		emit NewOrder(msg.sender, _market, orderId, _price, _amount, now, _sell);
 	}
 
-	// function match() private {
-	// 	// obtain order with best bid/ask
-	// 	// loop through the orderbook until either bid/ask == 0 order.amount reaches 0 or there are no longer qualified orders
-	// 	// determine which order to be filled all the way
-	// 	// swap balances
-	// 	// update the orders
-	// 	// update bid/ask
-	// }
+	function match(address _marketAddress, Market storage market, Order storage order, uint64 orderId) private {
+		if (order.sell) {
+			Order storage matchedOrder = 
+		} else {
+
+		}
+		// obtain order with best bid/ask
+		// loop through the orderbook until either bid/ask == 0 order.amount reaches 0 or there are no longer qualified orders
+		// determine which order to be filled all the way
+		// swap balances
+		// update the orders
+		// update bid/ask
+	}
 
 	// function trade() private {}
 
-	function cancelOrder(address _market, uint64 _orderId) public {
-		require(_market != 0);
-		Market storage market = markets[_market];
-		Order storage order = markets[_market].orderbook[_orderId];
-		Order storage next = markets[_market].orderbook[order.next];
-		Order storage prev = markets[_market].orderbook[order.prev];
+	function cancelOrder(address _marketAddress, uint64 _orderId) public {
+		require(_marketAddress != 0);
+		Market storage market = markets[_marketAddress];
+		Order storage order = markets[_marketAddress].orderbook[_orderId];
+		Order storage next = markets[_marketAddress].orderbook[order.next];
+		Order storage prev = markets[_marketAddress].orderbook[order.prev];
 		require(order.user == msg.sender);
 
 		if (order.sell) {
-			balances[_market][msg.sender].available = balances[_market][msg.sender].available.add(order.amount);
-			balances[_market][msg.sender].reserved = balances[_market][msg.sender].reserved.sub(order.amount);
+			balances[_marketAddress][msg.sender].available = balances[_marketAddress][msg.sender].available.add(order.amount);
+			balances[_marketAddress][msg.sender].reserved = balances[_marketAddress][msg.sender].reserved.sub(order.amount);
 		} else {
 			uint etherAmount = (order.price.mul(order.amount)).div(1 ether);
 			balances[0][msg.sender].available = balances[0][msg.sender].available.add(etherAmount);
@@ -203,12 +215,12 @@ contract ExchangePure {
 		prev.next = order.next;
 
 		market.priceTree.remove(_orderId);
-		delete markets[_market].orderbook[_orderId];
+		delete markets[_marketAddress].orderbook[_orderId];
 	}
 
-	function getOrder(address _market, uint64 _orderId) public view returns (address user, uint amount, uint price, uint64 next, uint64 prev, bool sell) {
-		require(_market != 0);
-		Order memory order = markets[_market].orderbook[_orderId];
+	function getOrder(address _marketAddress, uint64 _orderId) public view returns (address user, uint amount, uint price, uint64 next, uint64 prev, bool sell) {
+		require(_marketAddress != 0);
+		Order memory order = markets[_marketAddress].orderbook[_orderId];
 		user = order.user;
 		amount = order.amount;
 		price = order.price;
@@ -217,9 +229,9 @@ contract ExchangePure {
 		sell = order.sell;
 	}
 
-	function getMarketInfo(address _market) public view returns (uint64 bid, uint64 ask) {
-		require(_market != 0);
-		Market memory market = markets[_market];
+	function getMarketInfo(address _marketAddress) public view returns (uint64 bid, uint64 ask) {
+		require(_marketAddress != 0);
+		Market memory market = markets[_marketAddress];
 		bid = market.bid;
 		ask = market.ask;
 	}

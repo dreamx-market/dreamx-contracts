@@ -426,7 +426,9 @@ contract("ExchangePure", function(accounts) {
 		// 	)
 		// })
 
-		it("should match and fill an order then create a rest order", async () => {
+		it("should match and fill an order then create a rest order with the remaining volume", async () => {
+			const tradeWatcher = exchange.Trade();
+
 			await exchange.deposit(etherAddress, web3.toWei(10), {
 				value: web3.toWei(10),
 				from: accounts[1]
@@ -436,8 +438,16 @@ contract("ExchangePure", function(accounts) {
 				token.address,
 				web3.toWei(3),
 				web3.toWei(0.9),
-				true
+				false
 			);
+
+			const tradeEvent = tradeWatcher.get()[0].args;
+			assert.equal(tradeEvent.token, token.address);
+			assert.equal(web3.fromWei(tradeEvent.bid.toNumber()), 1);
+			assert.equal(web3.fromWei(tradeEvent.ask.toNumber()), 0.9);
+			assert.equal(web3.fromWei(tradeEvent.price.toNumber()), 0.9);
+			assert.equal(web3.fromWei(tradeEvent.amount.toNumber()), 1);
+			assert.equal(tradeEvent.sell, false);
 
 			const order = await exchange.getOrder(token.address, 6);
 			assert.equal(order[0], accounts[1]);
