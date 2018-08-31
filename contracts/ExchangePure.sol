@@ -130,7 +130,7 @@ contract ExchangePure {
 		Order storage parentPrev = market.orderbook[parent.prev];
 		Order storage parentNext = market.orderbook[parent.next];
 
-		// match(_marketAddress, market, order, orderId);
+		matchOrder(_marketAddress, market, order, orderId);
 
 		if (order.amount != 0) {
 			if (parentId != 0) {
@@ -167,10 +167,10 @@ contract ExchangePure {
 			if (order.prev == 0) {
 				if (_sell) {
 					market.bid = orderId;
-					Bid(_marketAddress, _price);
+					emit Bid(_marketAddress, _price);
 				} else {
 					market.ask = orderId;
-					Ask(_marketAddress, _price);
+					emit Ask(_marketAddress, _price);
 				}
 			}
 
@@ -180,60 +180,64 @@ contract ExchangePure {
 		}
 	}
 
-	function matchOrder(address _marketAddress, Market storage market, Order storage order, uint64 orderId) private {
+	function matchOrder(address _marketAddress, Market storage market, Order memory order, uint64 orderId) private {
+		uint64 matchedId;
 		if (order.sell) {
-			uint matchId = market.ask;
+			matchedId = market.ask;
 		} else {
-			uint matchId = market.bid;
+			matchedId = market.bid;
 		}
 
-		Order storage match = market.orderbook[matchId];
+		// if (order.sell) {
+		// 	while (matchedId != 0 && order.amount != 0 && order.price <= market.orderbook[matchedId].price) {
+		// 		// determine the order to be filled/ fill the orders
+		// 		// trade the balances
+		// 		// emit a trade event
+		// 		// remove the filled order
+		// 	}
+		// 	if (market.ask != matchedId) {
+  //       market.ask = matchedId;
+  //       emit Ask(_marketAddress, matchedOrder.price);
+  //   	}
+		// } else {
+		if (!order.sell) {	
+			while (matchedId != 0 && order.amount != 0 && order.price <= market.orderbook[matchedId].price) {
+				Order storage matchedOrder = market.orderbook[matchedId];
 
-		if (order.sell) {
-			while (matchId != 0, order.amount != 0, order.price >= match.price) {
-				// determine the order to be filled/ fill the orders
-				// trade the balances
-				// emit a trade event
-				// remove the filled order
-			}
-			if (market.ask != matchId) {
-        market.ask = matchId;
-        Ask(_marketAddress, match.price);
-    	}
-		} else {
-			while (matchId != 0, order.amount != 0, order.price <= match.price) {
 				uint tradeAmountInTokens;
-				if (order.amount >= match.amount) {
-					tradeAmountInTokens = order.amount.sub(match.amount);
+				if (order.amount >= matchedOrder.amount) {
+					tradeAmountInTokens = matchedOrder.amount;
 				} else {
-					tradeAmountInTokens = match.amount.sub(order.amount);
+					tradeAmountInTokens = order.amount;
 				}
-				uint tradeAmountInEther = (tradeAmountInTokens.mul(match.price)).div(1 ether);
+				uint tradeAmountInEther = (tradeAmountInTokens.mul(matchedOrder.price)).div(1 ether);
 				order.amount = order.amount.sub(tradeAmountInTokens);
-				match.amount = match.amount.sub(tradeAmountInTokens);
+				matchedOrder.amount = matchedOrder.amount.sub(tradeAmountInTokens);
 
-				trade(order.user, match.user, tradeAmount, tradeAmountInEther);
+				uint makerFee = (fees[uint(Fee.Maker)].mul(tradeAmountInEther)).div(1 ether);
+				uint takerFee = (fees[uint(Fee.Taker)].mul(tradeAmountInTokens)).div(1 ether);
+				balances[_marketAddress][matchedOrder.user].reserved = balances[_marketAddress][matchedOrder.user].reserved.sub(tradeAmountInTokens);
+				balances[0][matchedOrder.user].available = balances[0][matchedOrder.user].available.add(tradeAmountInEther.sub(makerFee));
+				balances[0][order.user].reserved = balances[0][order.user].reserved.sub(tradeAmountInEther);
+				balances[_marketAddress][order.user].available = balances[_marketAddress][order.user].available.add(tradeAmountInTokens.sub(takerFee));
+				balances[_marketAddress][feeCollector].available = balances[_marketAddress][feeCollector].available.add(takerFee);
+				balances[0][feeCollector].available = balances[0][feeCollector].available.add(makerFee);
 
-				if (match.amount != 0) {
+				emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);
+
+				if (matchedOrder.amount != 0) {
 					break;
 				}
 
-				Order storage removed = remove(market, match, matchId);
-				matchId = removed.next;
-				Order storage match = market.orderbook[matchId];
+				Order memory removed = remove(market, matchedOrder, matchedId);
+				matchedId = removed.next;
 			}
-			if (market.bid != matchId) {
-        market.bid = matchId;
-        Bid(_marketAddress, match.price);
+
+			if (market.bid != matchedId) {
+        market.bid = matchedId;
+        emit Bid(_marketAddress, market.orderbook[matchedId].price);
     	}
 		}
-	}
-
-	function trade(address user1, address user2, uint amount1, uint amount2) private {
-		// balances[_marketAddress][msg.sender].available = balances[_marketAddress][msg.sender].available.sub(_amount);
-		// balances[_marketAddress][msg.sender].reserved = balances[_marketAddress][msg.sender].reserved.add(_amount);
-		// balances[0][msg.sender].available = balances[0][msg.sender].available.sub(etherAmount);
-		// balances[0][msg.sender].reserved = balances[0][msg.sender].reserved.add(etherAmount);
 	}
 
 	function cancelOrder(address _marketAddress, uint64 _orderId) public {

@@ -7,11 +7,12 @@ const unitsOneEthCanBuy = process.env.TOKEN_RATE;
 const totalSupply = process.env.TOKEN_SUPPLY;
 const etherAddress = "0x0000000000000000000000000000000000000000";
 const [makerFee, takerFee, withdrawalFee] = [0, 1, 2];
+let feeAccount;
 
 contract("ExchangePure", function(accounts) {
 	beforeEach(async () => {
 		exchange = await Exchange.new();
-		const feeAccount = accounts[9];
+		feeAccount = accounts[9];
 		await exchange.changeFeeCollector(feeAccount);
 		token = await Token.new(name, symbol, unitsOneEthCanBuy, totalSupply);
 	});
@@ -430,13 +431,16 @@ contract("ExchangePure", function(accounts) {
 				token.address,
 				web3.toWei(3),
 				web3.toWei(0.9),
-				false
+				false,
+				{
+					from: accounts[1]
+				}
 			);
 
 			const tradeEvent = tradeWatcher.get()[0].args;
 			assert.equal(tradeEvent.token, token.address);
-			assert.equal(web3.fromWei(tradeEvent.bid.toNumber()), 1);
-			assert.equal(web3.fromWei(tradeEvent.ask.toNumber()), 0.9);
+			assert.equal(tradeEvent.bid.toNumber(), 6);
+			assert.equal(tradeEvent.ask.toNumber(), 4);
 			assert.equal(web3.fromWei(tradeEvent.price.toNumber()), 0.9);
 			assert.equal(web3.fromWei(tradeEvent.amount.toNumber()), 1);
 			assert.equal(tradeEvent.sell, false);
