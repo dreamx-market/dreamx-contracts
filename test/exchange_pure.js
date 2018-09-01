@@ -312,7 +312,7 @@ contract("ExchangePure", function(accounts) {
 			await exchange.changeFee(takerFee, web3.toWei(9999));
 		});
 
-		it.only("should match a sell order", async () => {
+		it("should match a sell order", async () => {
 			const tradeWatcher = exchange.Trade();
 
 			await populateSellOrders();
@@ -360,42 +360,47 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(market[1].toNumber(), 6);
 		});
 
-		// it("should match a buy order", async () => {
-		// 	const tradeWatcher = exchange.Trade();
+		it.only("should match a buy order", async () => {
+			const tradeWatcher = exchange.Trade();
 
-		// 	await populateOrders();
+			await populateBuyOrders();
 
-		// 	await token.transfer(accounts[1], web3.toWei(10));
-		// 	await exchange.deposit(token.address, web3.toWei(10), {
-		// 		from: accounts[1]
-		// 	});
+			// await token.transfer(accounts[1], web3.toWei(10));
+			// await token.approve(exchange.address, web3.toWei(10), {
+			// 	from: accounts[1]
+			// });
+			// await exchange.deposit(token.address, web3.toWei(10), {
+			// 	from: accounts[1]
+			// });
 
-		// 	await exchange.createOrder(
-		// 		token.address,
-		// 		web3.toWei(3),
-		// 		web3.toWei(1.2),
-		// 		true,
-		// 		{
-		// 			from: accounts[1]
-		// 		}
-		// 	);
+			// await exchange.createBuyOrder(
+			// 	token.address,
+			// 	web3.toWei(3),
+			// 	web3.toWei(0.8),
+			// 	true,
+			// 	{
+			// 		from: accounts[1]
+			// 	}
+			// );
 
-		// 	const tradeEvent = tradeWatcher.get()[0].args;
-		// 	assert.equal(tradeEvent.token, token.address);
-		// 	assert.equal(tradeEvent.bid.toNumber(), 2);
-		// 	assert.equal(tradeEvent.ask.toNumber(), 6);
-		// 	assert.equal(web3.fromWei(tradeEvent.price.toNumber()), 1.2);
-		// 	assert.equal(web3.fromWei(tradeEvent.amount.toNumber()), 1);
-		// 	assert.equal(tradeEvent.sell, true);
+			// const tradeEvent = tradeWatcher.get()[0].args;
+			// assert.equal(tradeEvent.token, token.address);
+			// assert.equal(tradeEvent.bid.toNumber(), 6);
+			// assert.equal(tradeEvent.ask.toNumber(), 4);
+			// assert.equal(web3.fromWei(tradeEvent.price.toNumber()), 0.8);
+			// assert.equal(web3.fromWei(tradeEvent.amount.toNumber()), 1);
+			// assert.equal(tradeEvent.sell, true);
 
-		// 	const order = await exchange.getOrder(token.address, 6);
-		// 	assert.equal(order[0], accounts[1]);
+			// const order = await exchange.getOrder(token.address, 6);
+			// assert.equal(order[0], accounts[1]);
+			// assert.equal(order[3].toNumber(), 0);
+			// assert.equal(order[4].toNumber(), 5);
 
-		// 	await assertExchangeBalance(etherAddress, accounts[1], 1.14);
-		// 	await assertExchangeBalance(token.address, accounts[0], 0.95);
-		// 	await assertExchangeBalance(token.address, feeAccount, 0.05);
-		// 	await assertExchangeBalance(etherAddress, feeAccount, 0.06);
-		// });
+			// await assertExchangeBalance(etherAddress, accounts[1], 0.76);
+			// await assertExchangeBalance(token.address, accounts[0], 0.95);
+			// await assertExchangeBalance(token.address, feeAccount, 0.05);
+			// await assertExchangeBalance(etherAddress, feeAccount, 0.04);
+		});
 
 		// it('should match multiple sell orders', async () => {
 		// 	await exchange.deposit(etherAddress, web3.toWei(10), {
@@ -453,26 +458,31 @@ populateSellOrders = async () => {
 	await token.approve(exchange.address, web3.toWei(100));
 	await exchange.deposit(token.address, web3.toWei(100));
 
-	await exchange.createOrder(token.address, web3.toWei(1), web3.toWei(1), true);
-	await exchange.createOrder(
+	await exchange.createSellOrder(
+		token.address,
+		web3.toWei(1),
+		web3.toWei(1),
+		true
+	);
+	await exchange.createSellOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(1.2),
 		true
 	);
-	await exchange.createOrder(
+	await exchange.createSellOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(1.1),
 		true
 	);
-	await exchange.createOrder(
+	await exchange.createSellOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.9),
 		true
 	);
-	await exchange.createOrder(
+	await exchange.createSellOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(1.05),
@@ -485,31 +495,31 @@ populateBuyOrders = async () => {
 		value: web3.toWei(10)
 	});
 
-	await exchange.createOrder(
+	await exchange.createBuyOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.56),
 		false
 	);
-	await exchange.createOrder(
+	await exchange.createBuyOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.6),
 		false
 	);
-	await exchange.createOrder(
+	await exchange.createBuyOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.5),
 		false
 	);
-	await exchange.createOrder(
+	await exchange.createBuyOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.8),
 		false
 	);
-	await exchange.createOrder(
+	await exchange.createBuyOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.7),

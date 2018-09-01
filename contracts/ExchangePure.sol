@@ -174,34 +174,65 @@ contract ExchangePure {
 			matchedId = market.bid;
 		}
 
-		// if (order.sell) {
-		// 	while (matchedId != 0 && order.amount != 0 && order.price <= market.orderbook[matchedId].price) {
-		// 		// determine the order to be filled/ fill the orders
-		// 		// trade the balances
-		// 		// emit a trade event
-		// 		// remove the filled order
-		// 	}
-		// 	if (market.ask != matchedId) {
-  //       market.ask = matchedId;
-  //       emit Ask(_marketAddress, matchedOrder.price);
-  //   	}
-		// } else {
-		if (!order.sell) {	
-			while (matchedId != 0 && order.amount != 0 && order.price >= market.orderbook[matchedId].price) {
-				Order storage matchedOrder = market.orderbook[matchedId];
+		Order storage matchedOrder;
+		uint tradeAmountInTokens;
+		uint tradeAmountInEther;
+		uint makerFee;
+		uint takerFee;
+		Order memory removed;
 
-				uint tradeAmountInTokens;
+		if (order.sell) {
+			while (matchedId != 0 && order.amount != 0 && order.price <= market.orderbook[matchedId].price) {
+				matchedOrder = market.orderbook[matchedId];
+
 				if (order.amount >= matchedOrder.amount) {
 					tradeAmountInTokens = matchedOrder.amount;
 				} else {
 					tradeAmountInTokens = order.amount;
 				}
-				uint tradeAmountInEther = (tradeAmountInTokens.mul(matchedOrder.price)).div(1 ether);
+				tradeAmountInEther = (tradeAmountInTokens.mul(matchedOrder.price)).div(1 ether);
 				order.amount = order.amount.sub(tradeAmountInTokens);
 				matchedOrder.amount = matchedOrder.amount.sub(tradeAmountInTokens);
 
-				uint makerFee = (fees[uint(Fee.Maker)].mul(tradeAmountInEther)).div(1 ether);
-				uint takerFee = (fees[uint(Fee.Taker)].mul(tradeAmountInTokens)).div(1 ether);
+				makerFee = (fees[uint(Fee.Maker)].mul(tradeAmountInTokens)).div(1 ether);
+				takerFee = (fees[uint(Fee.Taker)].mul(tradeAmountInEther)).div(1 ether);
+				balances[0][matchedOrder.user].reserved = balances[0][matchedOrder.user].reserved.sub(tradeAmountInEther);
+				balances[_marketAddress][matchedOrder.user].available = balances[_marketAddress][matchedOrder.user].available.add(tradeAmountInTokens.sub(makerFee));
+				balances[_marketAddress][order.user].reserved = balances[_marketAddress][order.user].reserved.sub(tradeAmountInTokens);
+				balances[0][order.user].available = balances[0][order.user].available.add(tradeAmountInEther.sub(takerFee));
+				balances[0][feeCollector].available = balances[0][feeCollector].available.add(takerFee);
+				balances[_marketAddress][feeCollector].available = balances[_marketAddress][feeCollector].available.add(makerFee);
+
+				emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);
+
+				if (matchedOrder.amount != 0) {
+					break;
+				}
+
+				removed = remove(market, matchedId);
+				matchedId = removed.prev;
+			}
+
+			if (market.ask != matchedId) {
+        market.ask = matchedId;
+        emit Ask(_marketAddress, market.orderbook[matchedId].price);
+    	}
+		} 
+		if (!order.sell) {
+			while (matchedId != 0 && order.amount != 0 && order.price >= market.orderbook[matchedId].price) {
+				matchedOrder = market.orderbook[matchedId];
+
+				if (order.amount >= matchedOrder.amount) {
+					tradeAmountInTokens = matchedOrder.amount;
+				} else {
+					tradeAmountInTokens = order.amount;
+				}
+				tradeAmountInEther = (tradeAmountInTokens.mul(matchedOrder.price)).div(1 ether);
+				order.amount = order.amount.sub(tradeAmountInTokens);
+				matchedOrder.amount = matchedOrder.amount.sub(tradeAmountInTokens);
+
+				makerFee = (fees[uint(Fee.Maker)].mul(tradeAmountInEther)).div(1 ether);
+				takerFee = (fees[uint(Fee.Taker)].mul(tradeAmountInTokens)).div(1 ether);
 				balances[_marketAddress][matchedOrder.user].reserved = balances[_marketAddress][matchedOrder.user].reserved.sub(tradeAmountInTokens);
 				balances[0][matchedOrder.user].available = balances[0][matchedOrder.user].available.add(tradeAmountInEther.sub(makerFee));
 				balances[0][order.user].reserved = balances[0][order.user].reserved.sub(tradeAmountInEther);
@@ -215,7 +246,7 @@ contract ExchangePure {
 					break;
 				}
 
-				Order memory removed = remove(market, matchedId);
+				removed = remove(market, matchedId);
 				matchedId = removed.next;
 			}
 
