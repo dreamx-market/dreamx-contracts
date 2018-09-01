@@ -379,48 +379,16 @@ contract("ExchangePure", function(accounts) {
 
 	describe("trading", () => {
 		beforeEach(async () => {
-			await token.approve(exchange.address, web3.toWei(100));
-			await exchange.deposit(token.address, web3.toWei(100));
-
 			await assertExchangeBalance(token.address, feeAccount, 0);
 			await assertExchangeBalance(etherAddress, feeAccount, 0);
 			await exchange.changeFee(makerFee, web3.toWei(9999));
 			await exchange.changeFee(takerFee, web3.toWei(9999));
-
-			await exchange.createOrder(
-				token.address,
-				web3.toWei(1),
-				web3.toWei(1),
-				true
-			);
-			await exchange.createOrder(
-				token.address,
-				web3.toWei(1),
-				web3.toWei(1.2),
-				true
-			);
-			await exchange.createOrder(
-				token.address,
-				web3.toWei(1),
-				web3.toWei(1.1),
-				true
-			);
-			await exchange.createOrder(
-				token.address,
-				web3.toWei(1),
-				web3.toWei(0.9),
-				true
-			);
-			await exchange.createOrder(
-				token.address,
-				web3.toWei(1),
-				web3.toWei(1.05),
-				true
-			);
 		});
 
-		it.only("should match a sell order", async () => {
+		it("should match a sell order", async () => {
 			const tradeWatcher = exchange.Trade();
+
+			await populateSellOrders();
 
 			await exchange.deposit(etherAddress, web3.toWei(10), {
 				value: web3.toWei(10),
@@ -454,7 +422,42 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, feeAccount, 0.045);
 		});
 
-		// it("should match a buy order", async () => {});
+		it("should match a buy order", async () => {
+			const tradeWatcher = exchange.Trade();
+
+			await populateBuyOrders();
+
+			await token.transfer(accounts[1], web3.toWei(10));
+			await exchange.deposit(token.address, web3.toWei(10), {
+				from: accounts[1]
+			});
+
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(3),
+				web3.toWei(1.2),
+				true,
+				{
+					from: accounts[1]
+				}
+			);
+
+			const tradeEvent = tradeWatcher.get()[0].args;
+			assert.equal(tradeEvent.token, token.address);
+			assert.equal(tradeEvent.bid.toNumber(), 2);
+			assert.equal(tradeEvent.ask.toNumber(), 6);
+			assert.equal(web3.fromWei(tradeEvent.price.toNumber()), 1.2);
+			assert.equal(web3.fromWei(tradeEvent.amount.toNumber()), 1);
+			assert.equal(tradeEvent.sell, true);
+
+			const order = await exchange.getOrder(token.address, 6);
+			assert.equal(order[0], accounts[1]);
+
+			await assertExchangeBalance(etherAddress, accounts[1], 1.14);
+			await assertExchangeBalance(token.address, accounts[0], 0.95);
+			await assertExchangeBalance(token.address, feeAccount, 0.05);
+			await assertExchangeBalance(etherAddress, feeAccount, 0.06);
+		});
 
 		// it('should match multiple sell orders', async () => {
 		// 	await exchange.deposit(etherAddress, web3.toWei(10), {
@@ -506,4 +509,70 @@ assertFail = async (fn, ...args) => {
 			"VM Exception while processing transaction: revert"
 		);
 	}
+};
+
+populateSellOrders = async () => {
+	await token.approve(exchange.address, web3.toWei(100));
+	await exchange.deposit(token.address, web3.toWei(100));
+	await exchange.createOrder(token.address, web3.toWei(1), web3.toWei(1), true);
+	await exchange.createOrder(
+		token.address,
+		web3.toWei(1),
+		web3.toWei(1.2),
+		true
+	);
+	await exchange.createOrder(
+		token.address,
+		web3.toWei(1),
+		web3.toWei(1.1),
+		true
+	);
+	await exchange.createOrder(
+		token.address,
+		web3.toWei(1),
+		web3.toWei(0.9),
+		true
+	);
+	await exchange.createOrder(
+		token.address,
+		web3.toWei(1),
+		web3.toWei(1.05),
+		true
+	);
+};
+
+populateBuyOrders = async () => {
+	await exchange.deposit(etherAddress, web3.toWei(10), {
+		value: web3.toWei(10)
+	});
+	await exchange.createOrder(
+		token.address,
+		web3.toWei(1),
+		web3.toWei(1),
+		false
+	);
+	await exchange.createOrder(
+		token.address,
+		web3.toWei(1),
+		web3.toWei(1.2),
+		false
+	);
+	await exchange.createOrder(
+		token.address,
+		web3.toWei(1),
+		web3.toWei(1.1),
+		false
+	);
+	await exchange.createOrder(
+		token.address,
+		web3.toWei(1),
+		web3.toWei(0.9),
+		false
+	);
+	await exchange.createOrder(
+		token.address,
+		web3.toWei(1),
+		web3.toWei(1.05),
+		false
+	);
 };
