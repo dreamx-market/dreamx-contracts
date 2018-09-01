@@ -130,48 +130,34 @@ contract ExchangePure {
 		Order storage parentPrev = market.orderbook[parent.prev];
 		Order storage parentNext = market.orderbook[parent.next];
 
-		matchOrder(_marketAddress, market, order, orderId);
+		// matchOrder(_marketAddress, market, order, orderId);
 
 		if (order.amount != 0) {
 			if (parentId != 0) {
 				if (_price >= parent.price) {
-					if (_sell) {
-						order.next = parent.next;
-						order.prev = parentId;
-						parent.next = orderId;
-						parentNext.prev = orderId;
-					} else {
-						order.next = parentId;
-						order.prev = parent.prev;
-						parent.prev = orderId;
-						parentPrev.next = orderId;
-					}
+					order.next = parent.next;
+					order.prev = parentId;
+					parent.next = orderId;
+					parentNext.prev = orderId;
 				} else {
-					if (_sell) {
-						order.next = parentId;
-						order.prev = parent.prev;
-						parent.prev = orderId;
-						parentPrev.next = orderId;
-					} else {
-						order.next = parent.next;
-						order.prev = parentId;
-						parent.next = orderId;
-						parentNext.prev = orderId;
-					}
+					order.next = parentId;
+					order.prev = parent.prev;
+					parent.prev = orderId;
+					parentPrev.next = orderId;
 				}
 			} else {
 				order.next = 0;
 				order.prev = 0;
 			}
 
-			if (order.prev == 0) {
-				if (_sell) {
-					market.bid = orderId;
-					emit Bid(_marketAddress, _price);
-				} else {
-					market.ask = orderId;
-					emit Ask(_marketAddress, _price);
-				}
+			if ((order.sell && market.bid == 0) || (order.sell && order.price < market.orderbook[market.bid].price)) {
+				market.bid = orderId;
+				emit Bid(_marketAddress, _price);
+			}
+
+			if ((!order.sell && market.ask == 0) || (!order.sell && order.price > market.orderbook[market.ask].price)) {
+				market.ask = orderId;
+				emit Ask(_marketAddress, _price);
 			}
 
 			market.priceTree.placeAfter(parentId, orderId, order.price);
