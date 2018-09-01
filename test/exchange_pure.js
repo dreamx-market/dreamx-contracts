@@ -253,10 +253,11 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, accounts[0], 0.5);
 		});
 
-		it.only("orders are sorted correctly", async () => {
+		it("orders are sorted correctly", async () => {
 			const orderWatcher = exchange.NewOrder();
 
-			await populateOrders();
+			await populateSellOrders();
+			await populateBuyOrders();
 
 			const order1 = await exchange.getOrder(token.address, 1);
 			const order2 = await exchange.getOrder(token.address, 2);
@@ -270,34 +271,34 @@ contract("ExchangePure", function(accounts) {
 			const order10 = await exchange.getOrder(token.address, 10);
 
 			assert.equal(order1[3].toNumber(), 5);
-			assert.equal(order1[4].toNumber(), 4); // 1
+			assert.equal(order1[4].toNumber(), 4); // sell: 1
 
 			assert.equal(order2[3].toNumber(), 0);
-			assert.equal(order2[4].toNumber(), 3); // 1.2
+			assert.equal(order2[4].toNumber(), 3); // sell: 1.2
 
 			assert.equal(order3[3].toNumber(), 2);
-			assert.equal(order3[4].toNumber(), 5); // 1.1
+			assert.equal(order3[4].toNumber(), 5); // sell: 1.1
 
 			assert.equal(order4[3].toNumber(), 1);
-			assert.equal(order4[4].toNumber(), 9); // 0.9
+			assert.equal(order4[4].toNumber(), 9); // sell: 0.9
 
 			assert.equal(order5[3].toNumber(), 3);
-			assert.equal(order5[4].toNumber(), 1); // 1.05
+			assert.equal(order5[4].toNumber(), 1); // sell: 1.05
 
 			assert.equal(order6[3].toNumber(), 7);
-			assert.equal(order6[4].toNumber(), 8); // 0.56
+			assert.equal(order6[4].toNumber(), 8); // buy: 0.56
 
 			assert.equal(order7[3].toNumber(), 10);
-			assert.equal(order7[4].toNumber(), 6); // 0.6
+			assert.equal(order7[4].toNumber(), 6); // buy: 0.6
 
 			assert.equal(order8[3].toNumber(), 6);
-			assert.equal(order8[4].toNumber(), 0); // 0.5
+			assert.equal(order8[4].toNumber(), 0); // buy: 0.5
 
 			assert.equal(order9[3].toNumber(), 4);
-			assert.equal(order9[4].toNumber(), 10); // 0.8
+			assert.equal(order9[4].toNumber(), 10); // buy:  0.8
 
 			assert.equal(order10[3].toNumber(), 9);
-			assert.equal(order10[4].toNumber(), 7); // 0.7
+			assert.equal(order10[4].toNumber(), 7); // buy:  0.7
 
 			await assertMarket(token.address, 4, 9);
 		});
@@ -311,10 +312,10 @@ contract("ExchangePure", function(accounts) {
 			await exchange.changeFee(takerFee, web3.toWei(9999));
 		});
 
-		it("should match a sell order", async () => {
+		it.only("should match a sell order", async () => {
 			const tradeWatcher = exchange.Trade();
 
-			await populateOrders(accounts);
+			await populateSellOrders();
 
 			let market = await exchange.getMarketInfo(token.address);
 
@@ -346,8 +347,8 @@ contract("ExchangePure", function(accounts) {
 
 			const order = await exchange.getOrder(token.address, 6);
 			assert.equal(order[0], accounts[1]);
-			assert.equal(order[3].toNumber(), 5);
-			assert.equal(order[4].toNumber(), 1);
+			assert.equal(order[3].toNumber(), 1);
+			assert.equal(order[4].toNumber(), 0);
 
 			await assertExchangeBalance(etherAddress, accounts[0], 0.855);
 			await assertExchangeBalance(token.address, accounts[1], 0.95);
@@ -355,10 +356,8 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, feeAccount, 0.045);
 
 			market = await exchange.getMarketInfo(token.address);
-			console.log(market);
-
-			// assert.equal(market[0].toNumber(), 1)
-			// assert.equal(market[1].toNumber(), 6)
+			assert.equal(market[0].toNumber(), 1);
+			assert.equal(market[1].toNumber(), 6);
 		});
 
 		// it("should match a buy order", async () => {
@@ -450,12 +449,9 @@ assertFail = async (fn, ...args) => {
 	}
 };
 
-populateOrders = async () => {
+populateSellOrders = async () => {
 	await token.approve(exchange.address, web3.toWei(100));
 	await exchange.deposit(token.address, web3.toWei(100));
-	await exchange.deposit(etherAddress, web3.toWei(10), {
-		value: web3.toWei(10)
-	});
 
 	await exchange.createOrder(token.address, web3.toWei(1), web3.toWei(1), true);
 	await exchange.createOrder(
@@ -482,6 +478,12 @@ populateOrders = async () => {
 		web3.toWei(1.05),
 		true
 	);
+};
+
+populateBuyOrders = async () => {
+	await exchange.deposit(etherAddress, web3.toWei(10), {
+		value: web3.toWei(10)
+	});
 
 	await exchange.createOrder(
 		token.address,

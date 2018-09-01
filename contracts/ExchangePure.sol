@@ -130,7 +130,7 @@ contract ExchangePure {
 		Order storage parentPrev = market.orderbook[parent.prev];
 		Order storage parentNext = market.orderbook[parent.next];
 
-		// matchOrder(_marketAddress, market, order, orderId);
+		matchOrder(_marketAddress, market, order, orderId);
 
 		if (order.amount != 0) {
 			if (parentId != 0) {
@@ -187,7 +187,7 @@ contract ExchangePure {
   //   	}
 		// } else {
 		if (!order.sell) {	
-			while (matchedId != 0 && order.amount != 0 && order.price <= market.orderbook[matchedId].price) {
+			while (matchedId != 0 && order.amount != 0 && order.price >= market.orderbook[matchedId].price) {
 				Order storage matchedOrder = market.orderbook[matchedId];
 
 				uint tradeAmountInTokens;
@@ -215,7 +215,7 @@ contract ExchangePure {
 					break;
 				}
 
-				Order memory removed = remove(market, matchedOrder, matchedId);
+				Order memory removed = remove(market, matchedId);
 				matchedId = removed.next;
 			}
 
@@ -241,14 +241,13 @@ contract ExchangePure {
 			balances[0][msg.sender].reserved = balances[0][msg.sender].reserved.sub(etherAmount);
 		}
 
-		remove(market, order, _orderId);
+		remove(market, _orderId);
 	}
 
-	function remove(Market storage market, Order storage order, uint64 _orderId) private returns (Order) {
-		Order storage next = market.orderbook[order.next];
-		Order storage prev = market.orderbook[order.prev];
-		next.prev = order.prev;
-		prev.next = order.next;		
+	function remove(Market storage market, uint64 _orderId) private returns (Order) {
+		Order memory order = market.orderbook[_orderId];
+		market.orderbook[order.next].prev = order.prev;
+		market.orderbook[order.prev].next = order.next;		
 		market.priceTree.remove(_orderId);
 		delete market.orderbook[_orderId];
 		return order;
