@@ -434,7 +434,7 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, feeAccount, 0.04);
 		});
 
-		it.only("should match multiple sell orders", async () => {
+		it("should match multiple sell orders", async () => {
 			const tradeWatcher = exchange.Trade();
 
 			await assertMarket(token.address, 4, 9);
@@ -475,11 +475,11 @@ contract("ExchangePure", function(accounts) {
 			await assertMarket(token.address, 5, 9);
 
 			await assertExchangeBalance(etherAddress, accounts[0], 2.30375);
-			await assertExchangeBalance(etherAddress, feeAccount, 0.12125);
 			await assertExchangeBalance(token.address, accounts[1], 2.375);
-			await assertExchangeBalance(token.address, feeAccount, 0.125);
-			await assertExchangeBalance(etherAddress, accounts[1], 7.575);
 			await assertReserveBalance(etherAddress, accounts[1], 0);
+			await assertExchangeBalance(etherAddress, accounts[1], 7.575);
+			await assertExchangeBalance(token.address, feeAccount, 0.125);
+			await assertExchangeBalance(etherAddress, feeAccount, 0.12125);
 		});
 
 		// it("should match multiple buy orders", async () => {});

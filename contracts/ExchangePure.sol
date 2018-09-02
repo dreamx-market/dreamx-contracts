@@ -179,13 +179,11 @@ contract ExchangePure {
 				tradeAmountInTokens = order.amount;
 			}
 			uint tradeAmountInEther = (tradeAmountInTokens.mul(matchedOrder.price)).div(1 ether);
+			uint overpaid = ((tradeAmountInTokens.mul(order.price)).div(1 ether)).sub(tradeAmountInEther);
 			order.amount = order.amount.sub(tradeAmountInTokens);
 			matchedOrder.amount = matchedOrder.amount.sub(tradeAmountInTokens);
 
-			// uint overpaid = ((tradeAmountInTokens.mul(order.price)).div(1 ether)).sub(tradeAmountInEther);
-
-			
-			trade(_marketAddress, 0, matchedOrder.user, order.user, tradeAmountInTokens, tradeAmountInEther, 0);
+			trade(_marketAddress, 0, matchedOrder.user, order.user, tradeAmountInTokens, tradeAmountInEther, overpaid);
 
 			emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);
 
@@ -245,7 +243,8 @@ contract ExchangePure {
 		balances[token1][user1].reserved = balances[token1][user1].reserved.sub(amount1);
 		balances[token2][user1].available = balances[token2][user1].available.add(amount2.sub(makerFee));
 		balances[token2][user2].reserved = balances[token2][user2].reserved.sub(amount2).sub(overpaid);
-		balances[token1][user2].available = balances[token1][user2].available.add(amount1.sub(takerFee)).add(overpaid);
+		balances[token1][user2].available = balances[token1][user2].available.add(amount1.sub(takerFee));
+		balances[token2][user2].available = balances[token2][user2].available.add(overpaid);
 		balances[token1][feeCollector].available = balances[token1][feeCollector].available.add(takerFee);
 		balances[token2][feeCollector].available = balances[token2][feeCollector].available.add(makerFee);
 	}
