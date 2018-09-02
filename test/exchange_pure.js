@@ -222,7 +222,7 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order2[3].toNumber(), 0);
 			assert.equal(order2[4].toNumber(), 5);
 
-			assert.equal(order3[0], "0x0000000000000000000000000000000000000000");
+			assert.equal(order3[0], etherAddress);
 			assert.equal(order3[3].toNumber(), 0);
 			assert.equal(order3[4].toNumber(), 0);
 
@@ -312,6 +312,42 @@ contract("ExchangePure", function(accounts) {
 			await populateOrders(accounts);
 		});
 
+		it("cannot create sell orders without sufficient funds", async () => {
+			await assertExchangeBalance(token.address, accounts[5], 0);
+
+			await assertFail(
+				exchange.createOrder,
+				token.address,
+				web3.toWei(10),
+				web3.toWei(10),
+				true,
+				{
+					from: accounts[5]
+				}
+			);
+
+			const order = await exchange.getOrder(token.address, 11);
+			assert.equal(order[0], etherAddress);
+		});
+
+		it("cannot create buy orders without sufficient funds", async () => {
+			await assertExchangeBalance(etherAddress, accounts[5], 0);
+
+			await assertFail(
+				exchange.createOrder,
+				token.address,
+				web3.toWei(10),
+				web3.toWei(10),
+				false,
+				{
+					from: accounts[5]
+				}
+			);
+
+			const order = await exchange.getOrder(token.address, 11);
+			assert.equal(order[0], etherAddress);
+		});
+
 		it("should match a sell order", async () => {
 			const tradeWatcher = exchange.Trade();
 
@@ -398,7 +434,7 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, feeAccount, 0.04);
 		});
 
-		it.only("should match multiple sell orders", async () => {
+		it("should match multiple sell orders", async () => {
 			console.log(exchange.address);
 
 			const tradeWatcher = exchange.Trade();
@@ -429,9 +465,9 @@ contract("ExchangePure", function(accounts) {
 			const order1 = await exchange.getOrder(token.address, 1);
 			const order4 = await exchange.getOrder(token.address, 4);
 			const order5 = await exchange.getOrder(token.address, 5);
-			assert.equal(order[0], "0x0000000000000000000000000000000000000000");
-			assert.equal(order1[0], "0x0000000000000000000000000000000000000000");
-			assert.equal(order4[0], "0x0000000000000000000000000000000000000000");
+			assert.equal(order[0], etherAddress);
+			assert.equal(order1[0], etherAddress);
+			assert.equal(order4[0], etherAddress);
 			assert.equal(order5[0], accounts[0]);
 			assert.equal(web3.fromWei(order5[1].toNumber()), 0.5);
 			assert.equal(web3.fromWei(order5[2].toNumber()), 1.05);
