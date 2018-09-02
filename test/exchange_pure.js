@@ -360,7 +360,7 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(market[1].toNumber(), 6);
 		});
 
-		it.only("should match a buy order", async () => {
+		it("should match a buy order", async () => {
 			const tradeWatcher = exchange.Trade();
 
 			await populateBuyOrders();

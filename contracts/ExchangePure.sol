@@ -196,12 +196,8 @@ contract ExchangePure {
 
 				makerFee = (fees[uint(Fee.Maker)].mul(tradeAmountInTokens)).div(1 ether);
 				takerFee = (fees[uint(Fee.Taker)].mul(tradeAmountInEther)).div(1 ether);
-				balances[0][matchedOrder.user].reserved = balances[0][matchedOrder.user].reserved.sub(tradeAmountInEther);
-				balances[_marketAddress][matchedOrder.user].available = balances[_marketAddress][matchedOrder.user].available.add(tradeAmountInTokens.sub(makerFee));
-				balances[_marketAddress][order.user].reserved = balances[_marketAddress][order.user].reserved.sub(tradeAmountInTokens);
-				balances[0][order.user].available = balances[0][order.user].available.add(tradeAmountInEther.sub(takerFee));
-				balances[0][feeCollector].available = balances[0][feeCollector].available.add(takerFee);
-				balances[_marketAddress][feeCollector].available = balances[_marketAddress][feeCollector].available.add(makerFee);
+
+				trade(0, _marketAddress, matchedOrder.user, order.user, tradeAmountInEther, tradeAmountInTokens, makerFee, takerFee);
 
 				emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);
 
@@ -233,12 +229,8 @@ contract ExchangePure {
 
 				makerFee = (fees[uint(Fee.Maker)].mul(tradeAmountInEther)).div(1 ether);
 				takerFee = (fees[uint(Fee.Taker)].mul(tradeAmountInTokens)).div(1 ether);
-				balances[_marketAddress][matchedOrder.user].reserved = balances[_marketAddress][matchedOrder.user].reserved.sub(tradeAmountInTokens);
-				balances[0][matchedOrder.user].available = balances[0][matchedOrder.user].available.add(tradeAmountInEther.sub(makerFee));
-				balances[0][order.user].reserved = balances[0][order.user].reserved.sub(tradeAmountInEther);
-				balances[_marketAddress][order.user].available = balances[_marketAddress][order.user].available.add(tradeAmountInTokens.sub(takerFee));
-				balances[_marketAddress][feeCollector].available = balances[_marketAddress][feeCollector].available.add(takerFee);
-				balances[0][feeCollector].available = balances[0][feeCollector].available.add(makerFee);
+				
+				trade(_marketAddress, 0, matchedOrder.user, order.user, tradeAmountInTokens, tradeAmountInEther, makerFee, takerFee);
 
 				emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);
 
@@ -255,6 +247,15 @@ contract ExchangePure {
         emit Bid(_marketAddress, market.orderbook[matchedId].price);
     	}
 		}
+	}
+
+	function trade(address token1, address token2, address user1, address user2, uint amount1, uint amount2, uint fee1, uint fee2) private {
+		balances[token1][user1].reserved = balances[token1][user1].reserved.sub(amount1);
+		balances[token2][user1].available = balances[token2][user1].available.add(amount2.sub(fee1));
+		balances[token2][user2].reserved = balances[token2][user2].reserved.sub(amount2);
+		balances[token1][user2].available = balances[token1][user2].available.add(amount1.sub(fee2));
+		balances[token1][feeCollector].available = balances[token1][feeCollector].available.add(fee2);
+		balances[token2][feeCollector].available = balances[token2][feeCollector].available.add(fee1);
 	}
 
 	function cancelOrder(address _marketAddress, uint64 _orderId) public {
