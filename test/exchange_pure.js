@@ -398,19 +398,46 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, feeAccount, 0.04);
 		});
 
-		// it("should match multiple sell orders", async () => {
-		// 	await exchange.deposit(etherAddress, web3.toWei(10), {
-		// 		value: web3.toWei(10),
-		// 		from: accounts[1]
-		// 	});
+		it.only("should match multiple sell orders", async () => {
+			const tradeWatcher = exchange.Trade();
 
-		// 	await exchange.createOrder(
-		// 		token.address,
-		// 		web3.toWei(3),
-		// 		web3.toWei(1.05),
-		// 		true
-		// 	);
-		// });
+			await assertMarket(token.address, 4, 9);
+
+			let market = await exchange.getMarketInfo(token.address);
+
+			assert.equal(market[0].toNumber(), 4);
+			assert.equal(market[1].toNumber(), 9);
+
+			await exchange.deposit(etherAddress, web3.toWei(10), {
+				value: web3.toWei(10),
+				from: accounts[1]
+			});
+
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(2.5),
+				web3.toWei(1.05),
+				false,
+				{
+					from: accounts[1]
+				}
+			);
+
+			const order = await exchange.getOrder(token.address, 11);
+			const order1 = await exchange.getOrder(token.address, 1);
+			const order4 = await exchange.getOrder(token.address, 4);
+			const order5 = await exchange.getOrder(token.address, 5);
+			assert.equal(order[0], "0x0000000000000000000000000000000000000000");
+			assert.equal(order1[0], "0x0000000000000000000000000000000000000000");
+			assert.equal(order4[0], "0x0000000000000000000000000000000000000000");
+			assert.equal(order5[0], accounts[0]);
+			assert.equal(web3.fromWei(order5[1].toNumber()), 0.5);
+			assert.equal(web3.fromWei(order5[2].toNumber()), 1.05);
+			assert.equal(order5[3].toNumber(), 3);
+			assert.equal(order5[4].toNumber(), 9);
+
+			await assertMarket(token.address, 5, 9);
+		});
 
 		// it("should match multiple buy orders", async () => {});
 	});
