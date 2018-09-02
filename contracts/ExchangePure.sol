@@ -182,10 +182,10 @@ contract ExchangePure {
 			order.amount = order.amount.sub(tradeAmountInTokens);
 			matchedOrder.amount = matchedOrder.amount.sub(tradeAmountInTokens);
 
-			uint makerFee = (fees[uint(Fee.Maker)].mul(tradeAmountInEther)).div(1 ether);
-			uint takerFee = (fees[uint(Fee.Taker)].mul(tradeAmountInTokens)).div(1 ether);
+			// uint overpaid = ((tradeAmountInTokens.mul(order.price)).div(1 ether)).sub(tradeAmountInEther);
+
 			
-			trade(_marketAddress, 0, matchedOrder.user, order.user, tradeAmountInTokens, tradeAmountInEther, makerFee, takerFee, 0);
+			trade(_marketAddress, 0, matchedOrder.user, order.user, tradeAmountInTokens, tradeAmountInEther, 0);
 
 			emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);
 
@@ -204,49 +204,50 @@ contract ExchangePure {
 	}
 
 	function matchBuyOrders(address _marketAddress, Market storage market, Order memory order, uint64 orderId) private {
-	uint64 matchedId = market.ask;
+		uint64 matchedId = market.ask;
 
-	while (matchedId != 0 && order.amount != 0 && order.price <= market.orderbook[matchedId].price) {
-		Order storage matchedOrder = market.orderbook[matchedId];
+		while (matchedId != 0 && order.amount != 0 && order.price <= market.orderbook[matchedId].price) {
+			Order storage matchedOrder = market.orderbook[matchedId];
 
-		uint tradeAmountInTokens;
-		if (order.amount >= matchedOrder.amount) {
-			tradeAmountInTokens = matchedOrder.amount;
-		} else {
-			tradeAmountInTokens = order.amount;
+			uint tradeAmountInTokens;
+			if (order.amount >= matchedOrder.amount) {
+				tradeAmountInTokens = matchedOrder.amount;
+			} else {
+				tradeAmountInTokens = order.amount;
+			}
+			uint tradeAmountInEther = (tradeAmountInTokens.mul(matchedOrder.price)).div(1 ether);
+			order.amount = order.amount.sub(tradeAmountInTokens);
+			matchedOrder.amount = matchedOrder.amount.sub(tradeAmountInTokens);
+
+			// uint overpaid = ((tradeAmountInTokens.mul(order.price)).div(1 ether)).sub(tradeAmountInEther);
+
+			trade(0, _marketAddress, matchedOrder.user, order.user, tradeAmountInEther, tradeAmountInTokens, 0);
+
+			emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);
+
+			if (matchedOrder.amount != 0) {
+				break;
+			}
+
+			Order memory removed = remove(market, matchedId);
+			matchedId = removed.prev;
 		}
-		uint tradeAmountInEther = (tradeAmountInTokens.mul(matchedOrder.price)).div(1 ether);
-		order.amount = order.amount.sub(tradeAmountInTokens);
-		matchedOrder.amount = matchedOrder.amount.sub(tradeAmountInTokens);
 
-		uint makerFee = (fees[uint(Fee.Maker)].mul(tradeAmountInTokens)).div(1 ether);
-		uint takerFee = (fees[uint(Fee.Taker)].mul(tradeAmountInEther)).div(1 ether);
-
-		trade(0, _marketAddress, matchedOrder.user, order.user, tradeAmountInEther, tradeAmountInTokens, makerFee, takerFee, 0);
-
-		emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);
-
-		if (matchedOrder.amount != 0) {
-			break;
+		if (market.ask != matchedId) {
+	    market.ask = matchedId;
+	    emit Ask(_marketAddress, market.orderbook[matchedId].price);
 		}
-
-		Order memory removed = remove(market, matchedId);
-		matchedId = removed.prev;
 	}
 
-	if (market.ask != matchedId) {
-    market.ask = matchedId;
-    emit Ask(_marketAddress, market.orderbook[matchedId].price);
-	}
-}
-
-	function trade(address token1, address token2, address user1, address user2, uint amount1, uint amount2, uint fee1, uint fee2, uint overpaid) private {
+	function trade(address token1, address token2, address user1, address user2, uint amount1, uint amount2, uint overpaid) private {
+		uint makerFee = (fees[uint(Fee.Maker)].mul(amount2)).div(1 ether);
+		uint takerFee = (fees[uint(Fee.Taker)].mul(amount1)).div(1 ether);
 		balances[token1][user1].reserved = balances[token1][user1].reserved.sub(amount1);
-		balances[token2][user1].available = balances[token2][user1].available.add(amount2.sub(fee1));
+		balances[token2][user1].available = balances[token2][user1].available.add(amount2.sub(makerFee));
 		balances[token2][user2].reserved = balances[token2][user2].reserved.sub(amount2).sub(overpaid);
-		balances[token1][user2].available = balances[token1][user2].available.add(amount1.sub(fee2)).add(overpaid);
-		balances[token1][feeCollector].available = balances[token1][feeCollector].available.add(fee2);
-		balances[token2][feeCollector].available = balances[token2][feeCollector].available.add(fee1);
+		balances[token1][user2].available = balances[token1][user2].available.add(amount1.sub(takerFee)).add(overpaid);
+		balances[token1][feeCollector].available = balances[token1][feeCollector].available.add(takerFee);
+		balances[token2][feeCollector].available = balances[token2][feeCollector].available.add(makerFee);
 	}
 
 	function cancelOrder(address _marketAddress, uint64 _orderId) public {

@@ -434,9 +434,7 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, feeAccount, 0.04);
 		});
 
-		it("should match multiple sell orders", async () => {
-			console.log(exchange.address);
-
+		it.only("should match multiple sell orders", async () => {
 			const tradeWatcher = exchange.Trade();
 
 			await assertMarket(token.address, 4, 9);
