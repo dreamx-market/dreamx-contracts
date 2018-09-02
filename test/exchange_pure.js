@@ -437,6 +437,13 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order5[4].toNumber(), 9);
 
 			await assertMarket(token.address, 5, 9);
+
+			await assertExchangeBalance(etherAddress, accounts[0], 2.30375);
+			await assertExchangeBalance(etherAddress, feeAccount, 0.12125);
+			await assertExchangeBalance(token.address, accounts[1], 2.375);
+			await assertExchangeBalance(token.address, feeAccount, 0.125);
+			await assertExchangeBalance(etherAddress, accounts[1], 7.575);
+			await assertReserveBalance(etherAddress, accounts[1], 0);
 		});
 
 		// it("should match multiple buy orders", async () => {});
@@ -458,6 +465,12 @@ assertExchangeBalance = async (token, account, expectedBalance) => {
 	const balances = await exchange.getBalance.call(token, account);
 	const balance = web3.fromWei(balances[0].toNumber());
 	assert.equal(balance, expectedBalance);
+};
+
+assertReserveBalance = async (token, account, expectedBalance) => {
+	const balances = await exchange.getBalance.call(token, account);
+	const reserve = web3.fromWei(balances[1].toNumber());
+	assert.equal(reserve, expectedBalance);
 };
 
 assertExchangeBalanceAtLeast = async (token, account, expectedBalance) => {
