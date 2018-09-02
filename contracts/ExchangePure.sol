@@ -197,7 +197,7 @@ contract ExchangePure {
 				makerFee = (fees[uint(Fee.Maker)].mul(tradeAmountInTokens)).div(1 ether);
 				takerFee = (fees[uint(Fee.Taker)].mul(tradeAmountInEther)).div(1 ether);
 
-				trade(0, _marketAddress, matchedOrder.user, order.user, tradeAmountInEther, tradeAmountInTokens, makerFee, takerFee);
+				trade(0, _marketAddress, matchedOrder.user, order.user, tradeAmountInEther, tradeAmountInTokens, makerFee, takerFee, 0);
 
 				emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);
 
@@ -229,7 +229,7 @@ contract ExchangePure {
 				makerFee = (fees[uint(Fee.Maker)].mul(tradeAmountInEther)).div(1 ether);
 				takerFee = (fees[uint(Fee.Taker)].mul(tradeAmountInTokens)).div(1 ether);
 				
-				trade(_marketAddress, 0, matchedOrder.user, order.user, tradeAmountInTokens, tradeAmountInEther, makerFee, takerFee);
+				trade(_marketAddress, 0, matchedOrder.user, order.user, tradeAmountInTokens, tradeAmountInEther, makerFee, takerFee, 0);
 
 				emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);
 
@@ -248,11 +248,11 @@ contract ExchangePure {
 		}
 	}
 
-	function trade(address token1, address token2, address user1, address user2, uint amount1, uint amount2, uint fee1, uint fee2) private {
+	function trade(address token1, address token2, address user1, address user2, uint amount1, uint amount2, uint fee1, uint fee2, uint overpaid) private {
 		balances[token1][user1].reserved = balances[token1][user1].reserved.sub(amount1);
 		balances[token2][user1].available = balances[token2][user1].available.add(amount2.sub(fee1));
-		balances[token2][user2].reserved = balances[token2][user2].reserved.sub(amount2);
-		balances[token1][user2].available = balances[token1][user2].available.add(amount1.sub(fee2));
+		balances[token2][user2].reserved = balances[token2][user2].reserved.sub(amount2).sub(overpaid);
+		balances[token1][user2].available = balances[token1][user2].available.add(amount1.sub(fee2)).add(overpaid);
 		balances[token1][feeCollector].available = balances[token1][feeCollector].available.add(fee2);
 		balances[token2][feeCollector].available = balances[token2][feeCollector].available.add(fee1);
 	}

@@ -399,6 +399,8 @@ contract("ExchangePure", function(accounts) {
 		});
 
 		it.only("should match multiple sell orders", async () => {
+			console.log(exchange.address);
+
 			const tradeWatcher = exchange.Trade();
 
 			await assertMarket(token.address, 4, 9);
