@@ -256,8 +256,7 @@ contract("ExchangePure", function(accounts) {
 		it("orders are sorted correctly", async () => {
 			const orderWatcher = exchange.NewOrder();
 
-			await populateSellOrders();
-			await populateBuyOrders();
+			await populateOrders(accounts);
 
 			const order1 = await exchange.getOrder(token.address, 1);
 			const order2 = await exchange.getOrder(token.address, 2);
@@ -310,17 +309,16 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, feeAccount, 0);
 			await exchange.changeFee(makerFee, web3.toWei(9999));
 			await exchange.changeFee(takerFee, web3.toWei(9999));
+			await populateOrders(accounts);
 		});
 
 		it("should match a sell order", async () => {
 			const tradeWatcher = exchange.Trade();
 
-			await populateSellOrders();
-
 			let market = await exchange.getMarketInfo(token.address);
 
 			assert.equal(market[0].toNumber(), 4);
-			assert.equal(market[1].toNumber(), 0);
+			assert.equal(market[1].toNumber(), 9);
 
 			await exchange.deposit(etherAddress, web3.toWei(10), {
 				value: web3.toWei(10),
@@ -339,16 +337,16 @@ contract("ExchangePure", function(accounts) {
 
 			const tradeEvent = tradeWatcher.get()[0].args;
 			assert.equal(tradeEvent.token, token.address);
-			assert.equal(tradeEvent.bid.toNumber(), 6);
+			assert.equal(tradeEvent.bid.toNumber(), 11);
 			assert.equal(tradeEvent.ask.toNumber(), 4);
 			assert.equal(web3.fromWei(tradeEvent.price.toNumber()), 0.9);
 			assert.equal(web3.fromWei(tradeEvent.amount.toNumber()), 1);
 			assert.equal(tradeEvent.sell, false);
 
-			const order = await exchange.getOrder(token.address, 6);
+			const order = await exchange.getOrder(token.address, 11);
 			assert.equal(order[0], accounts[1]);
 			assert.equal(order[3].toNumber(), 1);
-			assert.equal(order[4].toNumber(), 0);
+			assert.equal(order[4].toNumber(), 9);
 
 			await assertExchangeBalance(etherAddress, accounts[0], 0.855);
 			await assertExchangeBalance(token.address, accounts[1], 0.95);
@@ -357,13 +355,11 @@ contract("ExchangePure", function(accounts) {
 
 			market = await exchange.getMarketInfo(token.address);
 			assert.equal(market[0].toNumber(), 1);
-			assert.equal(market[1].toNumber(), 6);
+			assert.equal(market[1].toNumber(), 11);
 		});
 
 		it("should match a buy order", async () => {
 			const tradeWatcher = exchange.Trade();
-
-			await populateBuyOrders();
 
 			await token.transfer(accounts[1], web3.toWei(10));
 			await token.approve(exchange.address, web3.toWei(10), {
@@ -385,24 +381,24 @@ contract("ExchangePure", function(accounts) {
 
 			const tradeEvent = tradeWatcher.get()[0].args;
 			assert.equal(tradeEvent.token, token.address);
-			assert.equal(tradeEvent.bid.toNumber(), 6);
-			assert.equal(tradeEvent.ask.toNumber(), 4);
+			assert.equal(tradeEvent.bid.toNumber(), 11);
+			assert.equal(tradeEvent.ask.toNumber(), 9);
 			assert.equal(web3.fromWei(tradeEvent.price.toNumber()), 0.8);
 			assert.equal(web3.fromWei(tradeEvent.amount.toNumber()), 1);
 			assert.equal(tradeEvent.sell, true);
 
-			const order = await exchange.getOrder(token.address, 6);
+			const order = await exchange.getOrder(token.address, 11);
 			assert.equal(order[0], accounts[1]);
-			assert.equal(order[3].toNumber(), 0);
-			assert.equal(order[4].toNumber(), 5);
+			assert.equal(order[3].toNumber(), 4);
+			assert.equal(order[4].toNumber(), 10);
 
 			await assertExchangeBalance(etherAddress, accounts[1], 0.76);
-			await assertExchangeBalance(token.address, accounts[0], 0.95);
+			await assertExchangeBalance(token.address, accounts[2], 0.95);
 			await assertExchangeBalance(token.address, feeAccount, 0.05);
 			await assertExchangeBalance(etherAddress, feeAccount, 0.04);
 		});
 
-		// it('should match multiple sell orders', async () => {
+		// it("should match multiple sell orders", async () => {
 		// 	await exchange.deposit(etherAddress, web3.toWei(10), {
 		// 		value: web3.toWei(10),
 		// 		from: accounts[1]
@@ -413,8 +409,8 @@ contract("ExchangePure", function(accounts) {
 		// 		web3.toWei(3),
 		// 		web3.toWei(1.05),
 		// 		true
-		// 	)
-		// })
+		// 	);
+		// });
 
 		// it("should match multiple buy orders", async () => {});
 	});
@@ -454,9 +450,13 @@ assertFail = async (fn, ...args) => {
 	}
 };
 
-populateSellOrders = async () => {
+populateOrders = async accounts => {
 	await token.approve(exchange.address, web3.toWei(100));
 	await exchange.deposit(token.address, web3.toWei(100));
+	await exchange.deposit(etherAddress, web3.toWei(10), {
+		value: web3.toWei(10),
+		from: accounts[2]
+	});
 
 	await exchange.createOrder(token.address, web3.toWei(1), web3.toWei(1), true);
 	await exchange.createOrder(
@@ -483,41 +483,49 @@ populateSellOrders = async () => {
 		web3.toWei(1.05),
 		true
 	);
-};
-
-populateBuyOrders = async () => {
-	await exchange.deposit(etherAddress, web3.toWei(10), {
-		value: web3.toWei(10)
-	});
-
 	await exchange.createOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.56),
-		false
+		false,
+		{
+			from: accounts[2]
+		}
 	);
 	await exchange.createOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.6),
-		false
+		false,
+		{
+			from: accounts[2]
+		}
 	);
 	await exchange.createOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.5),
-		false
+		false,
+		{
+			from: accounts[2]
+		}
 	);
 	await exchange.createOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.8),
-		false
+		false,
+		{
+			from: accounts[2]
+		}
 	);
 	await exchange.createOrder(
 		token.address,
 		web3.toWei(1),
 		web3.toWei(0.7),
-		false
+		false,
+		{
+			from: accounts[2]
+		}
 	);
 };

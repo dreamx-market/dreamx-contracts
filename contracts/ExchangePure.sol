@@ -125,12 +125,12 @@ contract ExchangePure {
 
 		uint64 orderId = ++lastId;
 
+		matchOrder(_marketAddress, market, order, orderId);
+
 		uint64 parentId = market.priceTree.find(order.price);
 		Order storage parent = market.orderbook[parentId];
 		Order storage parentPrev = market.orderbook[parent.prev];
 		Order storage parentNext = market.orderbook[parent.next];
-
-		matchOrder(_marketAddress, market, order, orderId);
 
 		if (order.amount != 0) {
 			if (parentId != 0) {
@@ -162,7 +162,7 @@ contract ExchangePure {
 
 			market.priceTree.placeAfter(parentId, orderId, order.price);
 			market.orderbook[orderId] = order;
-			emit NewOrder(msg.sender, _marketAddress, orderId, _price, _amount, now, _sell);
+			emit NewOrder(msg.sender, _marketAddress, orderId, order.price, order.amount, now, order.sell);
 		}
 	}
 
@@ -213,8 +213,7 @@ contract ExchangePure {
         market.ask = matchedId;
         emit Ask(_marketAddress, market.orderbook[matchedId].price);
     	}
-		} 
-		if (!order.sell) {
+		} else {
 			while (matchedId != 0 && order.amount != 0 && order.price >= market.orderbook[matchedId].price) {
 				matchedOrder = market.orderbook[matchedId];
 
