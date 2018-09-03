@@ -549,6 +549,52 @@ contract("ExchangePure", function(accounts) {
 
 			await assertMarket(token.address, 4, 9);
 		});
+
+		it("should match multiple sell orders and place a rest order", async () => {
+			const tradeWatcher = exchange.Trade();
+
+			await assertMarket(token.address, 4, 9);
+
+			await exchange.deposit(etherAddress, web3.toWei(10), {
+				value: web3.toWei(10),
+				from: accounts[1]
+			});
+
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(5),
+				web3.toWei(1.05),
+				false,
+				{
+					from: accounts[1]
+				}
+			);
+
+			const order = await exchange.getOrder(token.address, 11);
+			const order1 = await exchange.getOrder(token.address, 1);
+			const order4 = await exchange.getOrder(token.address, 4);
+			const order5 = await exchange.getOrder(token.address, 5);
+			assert.equal(order[0], accounts[1]);
+			assert.equal(order1[0], etherAddress);
+			assert.equal(order4[0], etherAddress);
+			assert.equal(order5[0], etherAddress);
+			assert.equal(web3.fromWei(order[1].toNumber()), 2);
+			assert.equal(web3.fromWei(order[2].toNumber()), 1.05);
+			assert.equal(order[3].toNumber(), 3);
+			assert.equal(order[4].toNumber(), 9);
+
+			await assertMarket(token.address, 3, 11);
+
+			await assertExchangeBalance(etherAddress, accounts[0], 2.8025);
+			await assertExchangeBalance(token.address, accounts[1], 2.85);
+			await assertReserveBalance(etherAddress, accounts[1], 2.1);
+			await assertReserveBalance(token.address, accounts[1], 0);
+			await assertExchangeBalance(etherAddress, accounts[1], 4.95);
+			await assertExchangeBalance(token.address, feeAccount, 0.15);
+			await assertExchangeBalance(etherAddress, feeAccount, 0.1475);
+		});
+
+		// it('should match multiple buy orders and place a rest order', async () => {})
 	});
 });
 
