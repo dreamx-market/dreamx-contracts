@@ -217,8 +217,6 @@ contract ExchangePure {
 			order.amount = order.amount.sub(tradeAmountInTokens);
 			matchedOrder.amount = matchedOrder.amount.sub(tradeAmountInTokens);
 
-			// uint overpaid = ((tradeAmountInTokens.mul(order.price)).div(1 ether)).sub(tradeAmountInEther);
-
 			trade(0, _marketAddress, matchedOrder.user, order.user, tradeAmountInEther, tradeAmountInTokens, 0);
 
 			emit Trade(_marketAddress, orderId, matchedId, matchedOrder.price, tradeAmountInTokens, now, order.sell);

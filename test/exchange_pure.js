@@ -472,6 +472,7 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, accounts[0], 2.30375);
 			await assertExchangeBalance(token.address, accounts[1], 2.375);
 			await assertReserveBalance(etherAddress, accounts[1], 0);
+			await assertReserveBalance(token.address, accounts[1], 0);
 			await assertExchangeBalance(etherAddress, accounts[1], 7.575);
 			await assertExchangeBalance(token.address, feeAccount, 0.125);
 			await assertExchangeBalance(etherAddress, feeAccount, 0.12125);
@@ -493,36 +494,36 @@ contract("ExchangePure", function(accounts) {
 			await exchange.createOrder(
 				token.address,
 				web3.toWei(3.5),
-				web3.toWei(0.7),
+				web3.toWei(0),
 				true,
 				{
 					from: accounts[1]
 				}
 			);
 
-			assert.equal(1, 2);
-
 			const order = await exchange.getOrder(token.address, 11);
-			const order1 = await exchange.getOrder(token.address, 1);
-			const order4 = await exchange.getOrder(token.address, 4);
-			const order5 = await exchange.getOrder(token.address, 5);
+			const order10 = await exchange.getOrder(token.address, 10);
+			const order9 = await exchange.getOrder(token.address, 9);
+			const order7 = await exchange.getOrder(token.address, 7);
+			const order6 = await exchange.getOrder(token.address, 6);
 			assert.equal(order[0], etherAddress);
-			assert.equal(order1[0], etherAddress);
-			assert.equal(order4[0], etherAddress);
-			assert.equal(order5[0], accounts[0]);
-			assert.equal(web3.fromWei(order5[1].toNumber()), 0.5);
-			assert.equal(web3.fromWei(order5[2].toNumber()), 1.05);
-			assert.equal(order5[3].toNumber(), 3);
-			assert.equal(order5[4].toNumber(), 9);
+			assert.equal(order10[0], etherAddress);
+			assert.equal(order9[0], etherAddress);
+			assert.equal(order7[0], etherAddress);
+			assert.equal(order6[0], accounts[2]);
+			assert.equal(web3.fromWei(order6[1].toNumber()), 0.5);
+			assert.equal(web3.fromWei(order6[2].toNumber()), 0.56);
+			assert.equal(order6[3].toNumber(), 4);
+			assert.equal(order6[4].toNumber(), 8);
 
-			// await assertMarket(token.address, 5, 9);
+			await assertMarket(token.address, 4, 6);
 
-			// await assertExchangeBalance(etherAddress, accounts[0], 2.30375);
-			// await assertExchangeBalance(token.address, accounts[1], 2.375);
-			// await assertReserveBalance(etherAddress, accounts[1], 0);
-			// await assertExchangeBalance(etherAddress, accounts[1], 7.575);
-			// await assertExchangeBalance(token.address, feeAccount, 0.125);
-			// await assertExchangeBalance(etherAddress, feeAccount, 0.12125);
+			await assertExchangeBalance(token.address, accounts[2], 3.325);
+			await assertExchangeBalance(etherAddress, accounts[1], 2.261);
+			await assertReserveBalance(etherAddress, accounts[1], 0);
+			await assertReserveBalance(token.address, accounts[1], 0);
+			await assertExchangeBalance(token.address, feeAccount, 0.175);
+			await assertExchangeBalance(etherAddress, feeAccount, 0.119);
 		});
 
 		it("ignore orders with 0 volume", async () => {
