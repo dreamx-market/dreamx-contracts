@@ -40,7 +40,7 @@ contract ExchangePure {
   address private owner;
   address private feeCollector;
   mapping (address => mapping (address => Balance)) private balances;
-  mapping (uint => uint) private fees;
+  mapping (uint => uint) public fees;
   mapping (address => Market) private markets;
 
   event Deposit(address indexed token, address indexed user, uint amount, uint balance);
