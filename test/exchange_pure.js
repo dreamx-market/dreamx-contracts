@@ -234,6 +234,17 @@ contract("ExchangePure", function(accounts) {
 			assert.equal(order5[4].toNumber(), 1);
 		});
 
+		it("should update markets bid and ask on cancelling orders", async () => {
+			await populateOrders(accounts);
+			await assertMarket(token.address, 4, 9);
+
+			await exchange.cancelOrder(token.address, 4);
+			await assertMarket(token.address, 1, 9);
+
+			await exchange.cancelOrder(token.address, 9, { from: accounts[2] });
+			await assertMarket(token.address, 1, 10);
+		});
+
 		it("should refund ether on cancelling buy orders", async () => {
 			await assertExchangeBalance(etherAddress, accounts[0], 0);
 

@@ -191,14 +191,9 @@ contract ExchangePure {
 				break;
 			}
 
-			Order memory removed = remove(market, matchedId);
+			Order memory removed = remove(_marketAddress, matchedId);
 			matchedId = removed.next;
 		}
-
-		if (market.bid != matchedId) {
-      market.bid = matchedId;
-      emit Bid(_marketAddress, market.orderbook[matchedId].price);
-  	}
 	}
 
 	function matchBuyOrders(address _marketAddress, Market storage market, Order memory order, uint64 orderId) private {
@@ -225,13 +220,8 @@ contract ExchangePure {
 				break;
 			}
 
-			Order memory removed = remove(market, matchedId);
+			Order memory removed = remove(_marketAddress, matchedId);
 			matchedId = removed.prev;
-		}
-
-		if (market.ask != matchedId) {
-	    market.ask = matchedId;
-	    emit Ask(_marketAddress, market.orderbook[matchedId].price);
 		}
 	}
 
@@ -262,11 +252,20 @@ contract ExchangePure {
 			balances[0][msg.sender].reserved = balances[0][msg.sender].reserved.sub(etherAmount);
 		}
 
-		remove(market, _orderId);
+		remove(_marketAddress, _orderId);
 	}
 
-	function remove(Market storage market, uint64 _orderId) private returns (Order) {
+	function remove(address _marketAddress, uint64 _orderId) private returns (Order) {
+		Market storage market = markets[_marketAddress];
 		Order memory order = market.orderbook[_orderId];
+		if (market.ask == _orderId) {
+	    market.ask = order.prev;
+	    emit Ask(_marketAddress, market.orderbook[order.prev].price);
+		}
+		if (market.bid == _orderId) {
+	    market.bid = order.next;
+	    emit Bid(_marketAddress, market.orderbook[order.next].price);
+		}
 		market.orderbook[order.next].prev = order.prev;
 		market.orderbook[order.prev].next = order.next;		
 		market.priceTree.remove(_orderId);
