@@ -14,7 +14,8 @@ contract("ExchangePure", function(accounts) {
 		exchange = await Exchange.new();
 		feeAccount = accounts[9];
 		await exchange.changeFeeCollector(feeAccount);
-		token = await Token.new(name, symbol, unitsOneEthCanBuy, totalSupply);
+		token = await Token.new();
+		await token.initialize(name, symbol, unitsOneEthCanBuy, totalSupply);
 	});
 
 	describe("deposits", () => {

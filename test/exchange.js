@@ -15,7 +15,8 @@ contract("Exchange", function(accounts) {
 		exchange = await Exchange.new();
 		await exchange.changeFeeCollector(accounts[4]);
 		await exchange.changeSuperOwner(accounts[9]);
-		token = await Token.new(name, symbol, unitsOneEthCanBuy, totalSupply);
+		token = await Token.new();
+		await token.initialize(name, symbol, unitsOneEthCanBuy, totalSupply);
 	});
 
 	describe("public maintenance", () => {
