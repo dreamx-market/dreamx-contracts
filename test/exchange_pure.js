@@ -439,11 +439,6 @@ contract("ExchangePure", function(accounts) {
 
 			await assertMarket(token.address, 4, 9);
 
-			let market = await exchange.getMarketInfo(token.address);
-
-			assert.equal(market[0].toNumber(), 4);
-			assert.equal(market[1].toNumber(), 9);
-
 			await exchange.deposit(etherAddress, web3.toWei(10), {
 				value: web3.toWei(10),
 				from: accounts[1]
@@ -452,7 +447,7 @@ contract("ExchangePure", function(accounts) {
 			await exchange.createOrder(
 				token.address,
 				web3.toWei(2.5),
-				web3.toWei(1.05),
+				web3.toWei(4),
 				false,
 				{
 					from: accounts[1]
@@ -482,7 +477,77 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, feeAccount, 0.12125);
 		});
 
-		// it("should match multiple buy orders", async () => {});
+		it("should match multiple buy orders", async () => {
+			const tradeWatcher = exchange.Trade();
+
+			await assertMarket(token.address, 4, 9);
+
+			await token.transfer(accounts[1], web3.toWei(10));
+			await token.approve(exchange.address, web3.toWei(10), {
+				from: accounts[1]
+			});
+			await exchange.deposit(token.address, web3.toWei(10), {
+				from: accounts[1]
+			});
+
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(3.5),
+				web3.toWei(0.7),
+				true,
+				{
+					from: accounts[1]
+				}
+			);
+
+			assert.equal(1, 2);
+
+			const order = await exchange.getOrder(token.address, 11);
+			const order1 = await exchange.getOrder(token.address, 1);
+			const order4 = await exchange.getOrder(token.address, 4);
+			const order5 = await exchange.getOrder(token.address, 5);
+			assert.equal(order[0], etherAddress);
+			assert.equal(order1[0], etherAddress);
+			assert.equal(order4[0], etherAddress);
+			assert.equal(order5[0], accounts[0]);
+			assert.equal(web3.fromWei(order5[1].toNumber()), 0.5);
+			assert.equal(web3.fromWei(order5[2].toNumber()), 1.05);
+			assert.equal(order5[3].toNumber(), 3);
+			assert.equal(order5[4].toNumber(), 9);
+
+			// await assertMarket(token.address, 5, 9);
+
+			// await assertExchangeBalance(etherAddress, accounts[0], 2.30375);
+			// await assertExchangeBalance(token.address, accounts[1], 2.375);
+			// await assertReserveBalance(etherAddress, accounts[1], 0);
+			// await assertExchangeBalance(etherAddress, accounts[1], 7.575);
+			// await assertExchangeBalance(token.address, feeAccount, 0.125);
+			// await assertExchangeBalance(etherAddress, feeAccount, 0.12125);
+		});
+
+		it("ignore orders with 0 volume", async () => {
+			await assertMarket(token.address, 4, 9);
+
+			await exchange.deposit(etherAddress, web3.toWei(10), {
+				value: web3.toWei(10),
+				from: accounts[1]
+			});
+
+			await exchange.createOrder(
+				token.address,
+				web3.toWei(0),
+				web3.toWei(3),
+				false,
+				{
+					from: accounts[1]
+				}
+			);
+
+			const order = await exchange.getOrder(token.address, 11);
+			assert.equal(order[0], etherAddress);
+
+			await assertMarket(token.address, 4, 9);
+		});
 	});
 });
 
