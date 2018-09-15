@@ -31,9 +31,12 @@ contract ExchangePure {
 
   struct Market {
   	mapping (uint64 => Order) orderbook;
+  	mapping (uint => uint64) lastIdForPrice;
   	RedBlackTree.Tree priceTree;
     uint64 bid;
     uint64 ask;
+    uint64 first;
+    uint64 last;
   }
 
   uint64 private lastId;
@@ -127,12 +130,12 @@ contract ExchangePure {
 			matchSellOrders(_marketAddress, market, order, orderId);
 		}
 
-		uint64 parentId = market.priceTree.find(order.price);
-		Order storage parent = market.orderbook[parentId];
-		Order storage parentPrev = market.orderbook[parent.prev];
-		Order storage parentNext = market.orderbook[parent.next];
-
 		if (order.amount != 0) {
+			uint64 parentId = market.lastIdForPrice[order.price] != 0 ? market.lastIdForPrice[order.price] : market.priceTree.find(order.price);
+			Order storage parent = market.orderbook[parentId];
+			Order storage parentPrev = market.orderbook[parent.prev];
+			Order storage parentNext = market.orderbook[parent.next];
+		
 			if (parentId != 0) {
 				if (_price >= parent.price) {
 					order.next = parent.next;
@@ -162,6 +165,7 @@ contract ExchangePure {
 
 			market.priceTree.placeAfter(parentId, orderId, order.price);
 			market.orderbook[orderId] = order;
+			market.lastIdForPrice[order.price] = orderId;
 			emit NewOrder(msg.sender, _marketAddress, orderId, order.price, order.amount, now, order.sell);
 		}
 	}
@@ -267,7 +271,14 @@ contract ExchangePure {
 	    emit Bid(_marketAddress, market.orderbook[order.next].price);
 		}
 		market.orderbook[order.next].prev = order.prev;
-		market.orderbook[order.prev].next = order.next;		
+		market.orderbook[order.prev].next = order.next;
+		if (market.lastIdForPrice[order.price] == _orderId) {
+			if (market.orderbook[order.prev].price == order.price) {
+				market.lastIdForPrice[order.price] = order.prev;
+			} else {
+				delete market.lastIdForPrice[order.price];
+			}
+		}
 		market.priceTree.remove(_orderId);
 		delete market.orderbook[_orderId];
 		return order;
@@ -289,6 +300,10 @@ contract ExchangePure {
 		Market memory market = markets[_marketAddress];
 		bid = market.bid;
 		ask = market.ask;
+	}
+
+	function getLastOrderIdForMarketPrice(address _marketAddress, uint _price) public view returns (uint64 id) {
+		id = markets[_marketAddress].lastIdForPrice[_price];
 	}
 }
 
