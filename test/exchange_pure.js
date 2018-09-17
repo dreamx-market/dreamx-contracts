@@ -150,15 +150,36 @@ contract("ExchangePure", function(accounts) {
 			await assertLastOrderId(token.address, 2, 0);
 		});
 
-		it("last in, first out", async () => {
+		it("orders of similar price in sellbook is first in, first out", async () => {
+			await sell(1, 1, accounts[0]);
+			await assertMarket(token.address, 1, 0);
+			await sell(1, 1, accounts[0]);
+			await assertMarket(token.address, 1, 0);
+			await sell(1, 1, accounts[0]);
+			await assertMarket(token.address, 1, 0);
+			await sell(1, 1, accounts[0]);
+			await assertMarket(token.address, 1, 0);
+
+			await buy(2, 1, accounts[0]);
+			await assertMarket(token.address, 3, 0);
+			await assertFilled(1);
+			await assertFilled(2);
+		});
+
+		it("orders of similar price in buybook is last in, first out", async () => {
 			await buy(1, 1, accounts[0]);
 			await assertMarket(token.address, 0, 1);
 			await buy(1, 1, accounts[0]);
 			await assertMarket(token.address, 0, 2);
-			await sell(1, 2, accounts[0]);
-			await assertMarket(token.address, 3, 2);
-			await sell(1, 2, accounts[0]);
-			await assertMarket(token.address, 4, 2);
+			await buy(1, 1, accounts[0]);
+			await assertMarket(token.address, 0, 3);
+			await buy(1, 1, accounts[0]);
+			await assertMarket(token.address, 0, 4);
+
+			await sell(2, 1, accounts[0]);
+			await assertMarket(token.address, 0, 2);
+			await assertFilled(3);
+			await assertFilled(4);
 		});
 
 		it("cannot place order without sufficient tokens", async () => {
@@ -387,10 +408,6 @@ contract("ExchangePure", function(accounts) {
 			await exchange.changeFee(takerFee, web3.toWei(9999));
 			await populateOrders(accounts);
 		});
-
-		// it('should fill subsequent orders of similar price when selling', async () => {})
-
-		// it('should fill subsequent orders of similar price when buying', async () => {})
 
 		it("cannot create sell orders without sufficient funds", async () => {
 			await assertExchangeBalance(token.address, accounts[5], 0);
@@ -720,6 +737,11 @@ contract("ExchangePure", function(accounts) {
 			await assertExchangeBalance(etherAddress, feeAccount, 0.105);
 		});
 	});
+
+	assertFilled = async orderId => {
+		const order = await exchange.getOrder(token.address, orderId);
+		assert.equal(order[0], etherAddress);
+	};
 
 	assertNextPrev = async (orderId, next, prev) => {
 		const order = await exchange.getOrder(token.address, orderId);

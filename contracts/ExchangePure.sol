@@ -153,7 +153,7 @@ contract ExchangePure {
 				order.prev = 0;
 			}
 
-			if ((order.sell && market.bid == 0) || (order.sell && order.price <= market.orderbook[market.bid].price)) {
+			if ((order.sell && market.bid == 0) || (order.sell && order.price < market.orderbook[market.bid].price)) {
 				market.bid = orderId;
 				emit Bid(_marketAddress, _price);
 			}
@@ -196,6 +196,7 @@ contract ExchangePure {
 			}
 
 			Order memory removed = remove(_marketAddress, matchedId);
+
 			matchedId = removed.next;
 		}
 	}
@@ -262,13 +263,18 @@ contract ExchangePure {
 	function remove(address _marketAddress, uint64 _orderId) private returns (Order) {
 		Market storage market = markets[_marketAddress];
 		Order memory order = market.orderbook[_orderId];
+		if (market.bid == _orderId) {
+			if (market.orderbook[order.prev].price == order.price) {
+				market.bid = order.prev;
+	    	emit Bid(_marketAddress, market.orderbook[order.prev].price);
+			} else {
+				market.bid = order.next;
+	    	emit Bid(_marketAddress, market.orderbook[order.next].price);
+			}
+		}
 		if (market.ask == _orderId) {
 	    market.ask = order.prev;
 	    emit Ask(_marketAddress, market.orderbook[order.prev].price);
-		}
-		if (market.bid == _orderId) {
-	    market.bid = order.next;
-	    emit Bid(_marketAddress, market.orderbook[order.next].price);
 		}
 		market.orderbook[order.next].prev = order.prev;
 		market.orderbook[order.prev].next = order.next;
