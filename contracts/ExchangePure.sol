@@ -153,12 +153,12 @@ contract ExchangePure {
 				order.prev = 0;
 			}
 
-			if ((order.sell && market.bid == 0) || (order.sell && order.price < market.orderbook[market.bid].price)) {
+			if ((order.sell && market.bid == 0) || (order.sell && order.price <= market.orderbook[market.bid].price)) {
 				market.bid = orderId;
 				emit Bid(_marketAddress, _price);
 			}
 
-			if ((!order.sell && market.ask == 0) || (!order.sell && order.price > market.orderbook[market.ask].price)) {
+			if ((!order.sell && market.ask == 0) || (!order.sell && order.price >= market.orderbook[market.ask].price)) {
 				market.ask = orderId;
 				emit Ask(_marketAddress, _price);
 			}

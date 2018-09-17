@@ -94,7 +94,7 @@ contract("ExchangePure", function(accounts) {
 			});
 		});
 
-		it("first in, first out", async () => {
+		it("orders of similar price are placed after one another", async () => {
 			await buy(1, 1, accounts[0]);
 			await buy(1, 1, accounts[0]);
 			await buy(1, 1, accounts[0]);
@@ -117,7 +117,7 @@ contract("ExchangePure", function(accounts) {
 			await assertNextPrev(10, 0, 9);
 		});
 
-		it.only("lastIdForPrice is updated correctly", async () => {
+		it("lastIdForPrice is updated correctly", async () => {
 			await buy(1, 1, accounts[0]);
 			await assertLastOrderId(token.address, 1, 1);
 			await buy(1, 1, accounts[0]);
@@ -148,6 +148,17 @@ contract("ExchangePure", function(accounts) {
 
 			await exchange.cancelOrder(token.address, 6);
 			await assertLastOrderId(token.address, 2, 0);
+		});
+
+		it("last in, first out", async () => {
+			await buy(1, 1, accounts[0]);
+			await assertMarket(token.address, 0, 1);
+			await buy(1, 1, accounts[0]);
+			await assertMarket(token.address, 0, 2);
+			await sell(1, 2, accounts[0]);
+			await assertMarket(token.address, 3, 2);
+			await sell(1, 2, accounts[0]);
+			await assertMarket(token.address, 4, 2);
 		});
 
 		it("cannot place order without sufficient tokens", async () => {
@@ -376,6 +387,10 @@ contract("ExchangePure", function(accounts) {
 			await exchange.changeFee(takerFee, web3.toWei(9999));
 			await populateOrders(accounts);
 		});
+
+		// it('should fill subsequent orders of similar price when selling', async () => {})
+
+		// it('should fill subsequent orders of similar price when buying', async () => {})
 
 		it("cannot create sell orders without sufficient funds", async () => {
 			await assertExchangeBalance(token.address, accounts[5], 0);
