@@ -290,7 +290,7 @@ contract ExchangePure {
 		return order;
 	}
 
-	function getOrder(address _marketAddress, uint64 _orderId) public view returns (address user, uint amount, uint price, uint64 next, uint64 prev, bool sell) {
+	function getOrder(address _marketAddress, uint64 _orderId) public view returns (address user, uint amount, uint price, uint64 next, uint64 prev, bool sell, uint timestamp) {
 		require(_marketAddress != 0);
 		Order memory order = markets[_marketAddress].orderbook[_orderId];
 		user = order.user;
@@ -299,6 +299,7 @@ contract ExchangePure {
 		next = order.next;
 		prev = order.prev;
 		sell = order.sell;
+		timestamp = order.timestamp;
 	}
 
 	function getMarketInfo(address _marketAddress) public view returns (uint64 bid, uint64 ask) {

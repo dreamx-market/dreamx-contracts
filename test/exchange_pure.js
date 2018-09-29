@@ -94,6 +94,12 @@ contract("ExchangePure", function(accounts) {
 			});
 		});
 
+		it.only("getOrder returns timestamp", async () => {
+			await buy(1, 1, accounts[0]);
+			const order = await exchange.getOrder(token.address, 1);
+			assert(order[6]);
+		});
+
 		it("orders of similar price are placed after one another", async () => {
 			await buy(1, 1, accounts[0]);
 			await buy(1, 1, accounts[0]);
