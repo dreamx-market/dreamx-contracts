@@ -14,13 +14,13 @@ contract("Exchange", function(accounts) {
 	beforeEach(async () => {
 		exchange = await Exchange.new();
 		await exchange.changeFeeCollector(accounts[4]);
-		await exchange.changeSuperOwner(accounts[9]);
+		await exchange.changeOwner(accounts[9]);
 		token = await Token.new();
 		await token.initialize(name, symbol, unitsOneEthCanBuy, totalSupply);
 	});
 
 	describe("public maintenance", () => {
-		it("super owner can change fee account's address", async () => {
+		it("owner can change fee account's address", async () => {
 			const currentFeeCollector = await exchange.feeCollector.call();
 			assert.equal(currentFeeCollector, accounts[4]);
 
@@ -29,25 +29,25 @@ contract("Exchange", function(accounts) {
 			assert.equal(newFeeCollector, accounts[1]);
 		});
 
-		it("super owner can change owner's address", async () => {
+		it("owner can change owner's address", async () => {
 			const currentOwner = await exchange.owner.call();
-			assert.equal(currentOwner, accounts[0]);
+			assert.equal(currentOwner, accounts[9]);
 
 			await exchange.changeOwner(accounts[1], { from: accounts[9] });
 			const newOwner = await exchange.owner.call();
 			assert.equal(newOwner, accounts[1]);
 		});
 
-		it("super owner can change super owner's address", async () => {
-			const currentSuperOwner = await exchange.superOwner.call();
-			assert.equal(currentSuperOwner, accounts[9]);
+		it("owner can change owner's address", async () => {
+			const currentOwner = await exchange.owner.call();
+			assert.equal(currentOwner, accounts[9]);
 
-			await exchange.changeSuperOwner(accounts[1], { from: accounts[9] });
-			const newOwner = await exchange.superOwner.call();
+			await exchange.changeOwner(accounts[1], { from: accounts[9] });
+			const newOwner = await exchange.owner.call();
 			assert.equal(newOwner, accounts[1]);
 		});
 
-		it("super owner can change timelock duration", async () => {
+		it("owner can change timelock duration", async () => {
 			const currentDuration = await exchange.timelock.call();
 			assert.equal(currentDuration, 100000);
 

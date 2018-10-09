@@ -6,8 +6,8 @@ import 'openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 contract Exchange {
 	using SafeMath for uint;
 
+  address public signer;
   address public owner;
-  address public superOwner;
   address public feeCollector;
 	uint public timelock;
 
@@ -21,36 +21,36 @@ contract Exchange {
 	event Withdraw(address token, address account, uint amount, uint balance);
 	event Trade(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, address get, address give);
 
+	modifier signerOnly {
+		require(msg.sender == signer);
+		_;
+	}
+
 	modifier ownerOnly {
 		require(msg.sender == owner);
 		_;
 	}
 
-	modifier superOwnerOnly {
-		require(msg.sender == superOwner);
-		_;
-	}
-
 	constructor() public {
-		owner = msg.sender;
+		signer = msg.sender;
 		feeCollector = msg.sender;
-		superOwner = msg.sender;
+		owner = msg.sender;
   	timelock = 100000;
 	}
 
-	function changeFeeCollector(address _feeCollector) public superOwnerOnly {
+	function changeFeeCollector(address _feeCollector) public ownerOnly {
 		feeCollector = _feeCollector;
 	}
 
-	function changeOwner(address _owner) public superOwnerOnly {
+	function changeSigner(address _signer) public ownerOnly {
+		signer = _signer;
+	}
+
+	function changeOwner (address _owner) public ownerOnly {
 		owner = _owner;
 	}
 
-	function changeSuperOwner(address _superOwner) public superOwnerOnly {
-		superOwner = _superOwner;
-	}
-
-	function setTimelock(uint _duration) public superOwnerOnly {
+	function setTimelock(uint _duration) public ownerOnly {
 		require(_duration <= 1000000);
 		timelock = _duration;
 	}
@@ -68,7 +68,7 @@ contract Exchange {
     emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}
 
-	function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s, uint _fee) public ownerOnly {
+	function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s, uint _fee) public signerOnly {
 		lastActivity[msg.sender] = block.number;
 		bytes32 hash = keccak256(abi.encodePacked(this, _token, _amount, _account, _nonce));
 		require(!withdrawn[hash]);
@@ -101,7 +101,7 @@ contract Exchange {
     emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}
 
-	function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public ownerOnly {
+	function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public signerOnly {
 		/*
 			_addresses[0] == maker
 			_addresses[1] == taker
