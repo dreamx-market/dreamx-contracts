@@ -58,12 +58,12 @@ contract Exchange {
 	function deposit(address _token, uint _amount) public payable {
 		lastActivity[msg.sender] = block.number;
 		if (_token == 0) {
-		require(msg.value == _amount);
-		balances[0][msg.sender] = balances[0][msg.sender].add(msg.value);
+			require(msg.value == _amount);
+			balances[0][msg.sender] = balances[0][msg.sender].add(msg.value);
     } else {
-		require(msg.value == 0);
-		balances[_token][msg.sender] = balances[_token][msg.sender].add(_amount);
-		require(StandardToken(_token).transferFrom(msg.sender, this, _amount));
+			require(msg.value == 0);
+			balances[_token][msg.sender] = balances[_token][msg.sender].add(_amount);
+			require(StandardToken(_token).transferFrom(msg.sender, this, _amount));
     }
     emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender]);
 	}

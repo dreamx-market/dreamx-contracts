@@ -94,7 +94,7 @@ contract("ExchangePure", function(accounts) {
 			});
 		});
 
-		it.only("getOrder returns timestamp", async () => {
+		it("getOrder returns timestamp", async () => {
 			await buy(1, 1, accounts[0]);
 			const order = await exchange.getOrder(token.address, 1);
 			assert(order[6]);
