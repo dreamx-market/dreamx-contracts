@@ -8,9 +8,9 @@ const RBT = artifacts.require("./lib/RedBlackTree.sol");
 
 module.exports = function(deployer) {
 	deployer.deploy(Migrations);
-	deployer.deploy(Token);
 	deployer.deploy(Exchange);
-	deployer.deploy(RBT);
-	deployer.link(RBT, ExchangePure);
-	deployer.deploy(ExchangePure);
+	// deployer.deploy(Token);
+	// deployer.deploy(RBT);
+	// deployer.link(RBT, ExchangePure);
+	// deployer.deploy(ExchangePure);
 };
