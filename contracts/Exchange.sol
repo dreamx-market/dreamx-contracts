@@ -75,6 +75,23 @@ contract Exchange {
 		timelock = _duration;
 	}
 
+	mapping (address => bool) public useFeeToken;
+	uint public feeTokenRatePerEth;
+	bool public feeTokenStatus;
+	address public feeTokenAddress;
+
+	function setFeeTokenRatePerEth(uint _rate) public ownerOnly {
+		feeTokenRatePerEth = _rate;
+	}
+
+	function setFeeTokenStatus(bool _status) public ownerOnly {
+		feeTokenStatus = _status;
+	}
+
+	function setFeeTokenAddress(address _address) public ownerOnly {
+		feeTokenAddress = _address;
+	}
+
 	function deposit(address _token, uint _amount) public payable {
 		lastActivity[msg.sender] = block.number;
 		if (_token == 0) {
@@ -153,24 +170,40 @@ contract Exchange {
 		require(balances[_addresses[2]][_addresses[0]] >= _uints[2]);
 		require(balances[_addresses[3]][_addresses[1]] >= (_uints[1].div(_uints[0])).mul(_uints[2]));
 		require(orderFills[orderHash].add(_uints[2]) <= _uints[0]);
+		uint totalTradedAmount = _uints[0];
+		if (_addresses[3] == 0) totalTradedAmount = _uints[1];
 		uint takerFee = (_uints[6].mul(_uints[2])).div(1 ether);
+		if (useFeeToken[_addresses[1]]) {
+			if (balances[feeTokenAddress][_addresses[1]] >= totalTradedAmount.mul(feeTokenRatePerEth)) {
+				takerFee = 0;
+				balances[feeTokenAddress][_addresses[1]] = balances[feeTokenAddress][_addresses[1]].sub(totalTradedAmount.mul(feeTokenRatePerEth));
+			}
+		}
 		balances[_addresses[2]][_addresses[0]] = balances[_addresses[2]][_addresses[0]].sub(_uints[2]);
 		balances[_addresses[2]][_addresses[1]] = balances[_addresses[2]][_addresses[1]].add((_uints[2]).sub(takerFee));
 		balances[_addresses[2]][feeCollector] = balances[_addresses[2]][feeCollector].add(takerFee);
 		uint makerFee = (_uints[5].mul((_uints[1].mul(_uints[2])).div(_uints[0]))).div(1 ether);
+		if (useFeeToken[_addresses[0]]) {
+			if (balances[feeTokenAddress][_addresses[0]] >= totalTradedAmount.mul(feeTokenRatePerEth)) {
+				makerFee = 0;
+				balances[feeTokenAddress][_addresses[0]] = balances[feeTokenAddress][_addresses[0]].sub(totalTradedAmount.mul(feeTokenRatePerEth));
+			}
+		}
 		balances[_addresses[3]][_addresses[0]] = balances[_addresses[3]][_addresses[0]].add(((_uints[1].mul(_uints[2])).div(_uints[0])).sub(makerFee));
 		balances[_addresses[3]][_addresses[1]] = balances[_addresses[3]][_addresses[1]].sub((_uints[1].mul(_uints[2])).div(_uints[0]));
 		balances[_addresses[3]][feeCollector] = balances[_addresses[3]][feeCollector].add(makerFee);
 		orderFills[orderHash] = orderFills[orderHash].add(_uints[2]);
-
 		if (airdropStatus) {
-			uint totalTradedAmount = _uints[0];
-			if (_addresses[3] == 0) totalTradedAmount = _uints[1];
 			uint airdropAmount = totalTradedAmount.mul(airdropRatePerEth);
 			if (balances[airdropTokenAddress][airdropAccountAddress] >= airdropAmount) {
-				balances[airdropTokenAddress][airdropAccountAddress] = balances[airdropTokenAddress][airdropAccountAddress].sub(airdropAmount);
-				balances[airdropTokenAddress][_addresses[0]] = balances[airdropTokenAddress][_addresses[0]].add(airdropAmount.div(2));
-				balances[airdropTokenAddress][_addresses[1]] = balances[airdropTokenAddress][_addresses[1]].add(airdropAmount.div(2));
+				if (makerFee != 0) {
+					balances[airdropTokenAddress][airdropAccountAddress] = balances[airdropTokenAddress][airdropAccountAddress].sub(airdropAmount);
+					balances[airdropTokenAddress][_addresses[0]] = balances[airdropTokenAddress][_addresses[0]].add(airdropAmount);
+				}
+				if (takerFee != 0) {
+					balances[airdropTokenAddress][airdropAccountAddress] = balances[airdropTokenAddress][airdropAccountAddress].sub(airdropAmount);
+					balances[airdropTokenAddress][_addresses[1]] = balances[airdropTokenAddress][_addresses[1]].add(airdropAmount);
+				}
 			}
 		}
 	}

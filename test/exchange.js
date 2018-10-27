@@ -234,7 +234,9 @@ contract("Exchange", function(accounts) {
 				from: accounts[9]
 			});
 			await exchange.setAirdropRatePerEth(100, { from: accounts[9] });
-			await exchange.setFeeTokensRatePerEth(100, { from: accounts[9] });
+			await exchange.setFeeTokenRatePerEth(100, { from: accounts[9] });
+			await exchange.setFeeTokenStatus(true, { from: accounts[9] });
+			await exchange.setFeeTokenAddress(airdrop.address, { from: accounts[9] });
 		});
 
 		it("should airdrop an amount equivalent to the traded amount", async () => {
@@ -256,12 +258,12 @@ contract("Exchange", function(accounts) {
 				takeAmount
 			);
 
-			await assertExchangeBalance(airdrop.address, accounts[0], 9975);
-			await assertExchangeBalance(airdrop.address, accounts[1], 25);
+			await assertExchangeBalance(airdrop.address, accounts[0], 9950);
+			await assertExchangeBalance(airdrop.address, accounts[1], 50);
 		});
 
 		it("can use airdrop tokens to pay for trading fee", async () => {
-			await exchange.useFeeTokens(true);
+			await exchange.setFeeTokenStatus(true, { from: accounts[9] });
 			const maker = accounts[0];
 			const taker = accounts[1];
 			const giveToken = token.address;
