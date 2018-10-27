@@ -224,6 +224,11 @@ contract("Exchange", function(accounts) {
 				unitsOneEthCanBuy,
 				totalSupply
 			);
+			await airdrop.approve(exchange.address, web3.toWei(10000));
+			await exchange.deposit(airdrop.address, web3.toWei(10000));
+			await exchange.changeAirdropAccountAddress(accounts[0], {
+				from: accounts[9]
+			});
 			await exchange.setAirdropStatus(true, { from: accounts[9] });
 			await exchange.setAirdropTokenAddress(airdrop.address, {
 				from: accounts[9]
@@ -250,7 +255,7 @@ contract("Exchange", function(accounts) {
 				takeAmount
 			);
 
-			await assertExchangeBalance(airdrop.address, accounts[0], 50);
+			await assertExchangeBalance(airdrop.address, accounts[0], 9950);
 			await assertExchangeBalance(airdrop.address, accounts[1], 50);
 		});
 	});

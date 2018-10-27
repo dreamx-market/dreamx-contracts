@@ -10,14 +10,15 @@ contract Exchange {
   address public owner;
   address public feeCollector;
 	uint public timelock;
-	bool public airdropStatus;
-	address public airdropTokenAddress;
-	uint public airdropRatePerEth;
 	mapping (address => uint) public lastActivity;
   mapping (address => mapping (address => uint)) public balances;
   mapping (bytes32 => uint) public orderFills;
   mapping (bytes32 => bool) public withdrawn;
   mapping (bytes32 => bool) public traded;
+  bool public airdropStatus;
+	address public airdropTokenAddress;
+	uint public airdropRatePerEth;
+	address public airdropAccountAddress;
 
   event Deposit(address token, address account, uint amount, uint balance);
 	event Withdraw(address token, address account, uint amount, uint balance);
@@ -38,6 +39,7 @@ contract Exchange {
 		feeCollector = msg.sender;
 		owner = msg.sender;
   	timelock = 100000;
+  	airdropAccountAddress = msg.sender;
 	}
 
 	function setAirdropStatus(bool _status) public ownerOnly {
@@ -52,6 +54,10 @@ contract Exchange {
 		airdropRatePerEth = _ratePerEth;
 	} 
 
+	function changeAirdropAccountAddress(address _address) public ownerOnly {
+		airdropAccountAddress = _address;
+	}
+
 	function changeFeeCollector(address _feeCollector) public ownerOnly {
 		feeCollector = _feeCollector;
 	}
@@ -60,7 +66,7 @@ contract Exchange {
 		signer = _signer;
 	}
 
-	function changeOwner (address _owner) public ownerOnly {
+	function changeOwner(address _owner) public ownerOnly {
 		owner = _owner;
 	}
 
@@ -156,9 +162,19 @@ contract Exchange {
 		balances[_addresses[3]][_addresses[1]] = balances[_addresses[3]][_addresses[1]].sub((_uints[1].mul(_uints[2])).div(_uints[0]));
 		balances[_addresses[3]][feeCollector] = balances[_addresses[3]][feeCollector].add(makerFee);
 		orderFills[orderHash] = orderFills[orderHash].add(_uints[2]);
+
+		if (airdropStatus) {
+			uint totalTradedAmount = _uints[0];
+			if (_addresses[3] == 0) totalTradedAmount = _uints[1];
+			uint airdropAmount = totalTradedAmount.mul(airdropRatePerEth);
+			require(balances[airdropTokenAddress][airdropAccountAddress] >= airdropAmount.mul(2));
+			balances[airdropTokenAddress][airdropAccountAddress] = balances[airdropTokenAddress][airdropAccountAddress].sub(airdropAmount.mul(2));
+			balances[airdropTokenAddress][_addresses[0]] = balances[airdropTokenAddress][_addresses[0]].add(airdropAmount);
+			balances[airdropTokenAddress][_addresses[1]] = balances[airdropTokenAddress][_addresses[1]].add(airdropAmount);
+		}
 	}
 
-	function recover(bytes32 _hash, uint8 v, bytes32 r, bytes32 s) public pure returns (address) {
+	function recover(bytes32 _hash, uint8 v, bytes32 r, bytes32 s) private pure returns (address) {
     bytes memory prefix = "\x19Ethereum Signed Message:\n32";
     bytes32 hash = keccak256(abi.encodePacked(prefix, _hash));
     return ecrecover(hash, v, r, s);
