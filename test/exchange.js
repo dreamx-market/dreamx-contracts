@@ -234,6 +234,7 @@ contract("Exchange", function(accounts) {
 				from: accounts[9]
 			});
 			await exchange.setAirdropRatePerEth(100, { from: accounts[9] });
+			await exchange.setFeeTokensRatePerEth(100, { from: accounts[9] });
 		});
 
 		it("should airdrop an amount equivalent to the traded amount", async () => {
@@ -255,8 +256,31 @@ contract("Exchange", function(accounts) {
 				takeAmount
 			);
 
+			await assertExchangeBalance(airdrop.address, accounts[0], 9975);
+			await assertExchangeBalance(airdrop.address, accounts[1], 25);
+		});
+
+		it("can use airdrop tokens to pay for trading fee", async () => {
+			await exchange.useFeeTokens(true);
+			const maker = accounts[0];
+			const taker = accounts[1];
+			const giveToken = token.address;
+			const giveAmount = web3.toWei(100);
+			const takeToken = etherAddress;
+			const takeAmount = web3.toWei(0.005 * 100);
+			const amount = giveAmount;
+
+			await trade(
+				maker,
+				taker,
+				amount,
+				giveToken,
+				takeToken,
+				giveAmount,
+				takeAmount
+			);
+
 			await assertExchangeBalance(airdrop.address, accounts[0], 9950);
-			await assertExchangeBalance(airdrop.address, accounts[1], 50);
 		});
 	});
 });

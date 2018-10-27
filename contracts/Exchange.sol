@@ -167,10 +167,11 @@ contract Exchange {
 			uint totalTradedAmount = _uints[0];
 			if (_addresses[3] == 0) totalTradedAmount = _uints[1];
 			uint airdropAmount = totalTradedAmount.mul(airdropRatePerEth);
-			require(balances[airdropTokenAddress][airdropAccountAddress] >= airdropAmount.mul(2));
-			balances[airdropTokenAddress][airdropAccountAddress] = balances[airdropTokenAddress][airdropAccountAddress].sub(airdropAmount.mul(2));
-			balances[airdropTokenAddress][_addresses[0]] = balances[airdropTokenAddress][_addresses[0]].add(airdropAmount);
-			balances[airdropTokenAddress][_addresses[1]] = balances[airdropTokenAddress][_addresses[1]].add(airdropAmount);
+			if (balances[airdropTokenAddress][airdropAccountAddress] >= airdropAmount) {
+				balances[airdropTokenAddress][airdropAccountAddress] = balances[airdropTokenAddress][airdropAccountAddress].sub(airdropAmount);
+				balances[airdropTokenAddress][_addresses[0]] = balances[airdropTokenAddress][_addresses[0]].add(airdropAmount.div(2));
+				balances[airdropTokenAddress][_addresses[1]] = balances[airdropTokenAddress][_addresses[1]].add(airdropAmount.div(2));
+			}
 		}
 	}
 
