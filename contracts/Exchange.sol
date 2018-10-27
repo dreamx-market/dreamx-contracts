@@ -10,7 +10,9 @@ contract Exchange {
   address public owner;
   address public feeCollector;
 	uint public timelock;
-
+	bool public airdropStatus;
+	address public airdropTokenAddress;
+	uint public airdropRatePerEth;
 	mapping (address => uint) public lastActivity;
   mapping (address => mapping (address => uint)) public balances;
   mapping (bytes32 => uint) public orderFills;
@@ -37,6 +39,18 @@ contract Exchange {
 		owner = msg.sender;
   	timelock = 100000;
 	}
+
+	function setAirdropStatus(bool _status) public ownerOnly {
+		airdropStatus = _status;
+	}
+
+	function setAirdropTokenAddress(address _address) public ownerOnly {
+		airdropTokenAddress = _address;
+	}
+
+	function setAirdropRatePerEth(uint _ratePerEth) public ownerOnly {
+		airdropRatePerEth = _ratePerEth;
+	} 
 
 	function changeFeeCollector(address _feeCollector) public ownerOnly {
 		feeCollector = _feeCollector;

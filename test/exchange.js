@@ -215,24 +215,45 @@ contract("Exchange", function(accounts) {
 		});
 	});
 
-	// describe("airdrop", () => {
-	// 	beforeEach(async () => {
-	// 		airdrop = await Token.new();
-	// 		await airdrop.initialize(
-	// 			"AirdropToken",
-	// 			"AIR",
-	// 			unitsOneEthCanBuy,
-	// 			totalSupply
-	// 		);
-	// 		await exchange.setAirdropStatus(true, { from: accounts[9] });
-	// 		await exchange.setAirdropTokenAddress(airdrop.address, {
-	// 			from: accounts[9]
-	// 		});
-	// 		await exchange.setAirdropRatePerEth("100", { from: accounts[9] });
-	// 	});
+	describe("airdrop", () => {
+		beforeEach(async () => {
+			airdrop = await Token.new();
+			await airdrop.initialize(
+				"AirdropToken",
+				"AIR",
+				unitsOneEthCanBuy,
+				totalSupply
+			);
+			await exchange.setAirdropStatus(true, { from: accounts[9] });
+			await exchange.setAirdropTokenAddress(airdrop.address, {
+				from: accounts[9]
+			});
+			await exchange.setAirdropRatePerEth(100, { from: accounts[9] });
+		});
 
-	// 	it("should airdrop an amount equivalent to the traded amount", async () => {});
-	// });
+		it("should airdrop an amount equivalent to the traded amount", async () => {
+			const maker = accounts[0];
+			const taker = accounts[1];
+			const giveToken = token.address;
+			const giveAmount = web3.toWei(100);
+			const takeToken = etherAddress;
+			const takeAmount = web3.toWei(0.005 * 100);
+			const amount = giveAmount;
+
+			await trade(
+				maker,
+				taker,
+				amount,
+				giveToken,
+				takeToken,
+				giveAmount,
+				takeAmount
+			);
+
+			await assertExchangeBalance(airdrop.address, accounts[0], 50);
+			await assertExchangeBalance(airdrop.address, accounts[1], 50);
+		});
+	});
 });
 
 const trade = async (
