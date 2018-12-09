@@ -146,7 +146,7 @@ contract Exchange {
 			_addresses[3] == takeToken
 			_uints[0] == giveAmount
 			_uints[1] == takeAmount
-			_uints[2] == amount
+			_uints[2] == fillAmount
 			_uints[3] == makerNonce
 			_uints[4] == takerNonce
 			_uints[5] == makerFee
