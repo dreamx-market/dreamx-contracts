@@ -157,9 +157,11 @@ contract Exchange {
 			rs[0]..[1] == makerR, makerS
 			rs[2]..[3] == takerR, takerS
 		*/
+		require(cancelledOrders[_addresses[0]] < _uints[3]);
 		lastActivity[_addresses[0]] = block.number;
 		lastActivity[_addresses[1]] = block.number;
 		bytes32 orderHash = keccak256(abi.encodePacked(this, _addresses[0], _addresses[2], _uints[0], _addresses[3], _uints[1], _uints[3], _uints[7]));
+		require(!cancelled[orderHash]);
 		require(recover(orderHash, v[0], rs[0], rs[1]) == _addresses[0]);
 		bytes32 tradeHash = keccak256(abi.encodePacked(this, orderHash, _addresses[1], _uints[2], _uints[4]));
 		require(recover(tradeHash, v[1], rs[2], rs[3]) == _addresses[1]);
@@ -213,5 +215,17 @@ contract Exchange {
     bytes32 hash = keccak256(abi.encodePacked(prefix, _hash));
     return ecrecover(hash, v, r, s);
 	}
+
+	mapping (address => uint256) public cancelledOrders;
+	mapping (bytes32 => bool) public cancelled;
+
+	function bulkCancelOrders(address _account, uint256 _nonce) public signerOnly {
+		require(_nonce > cancelledOrders[_account]);
+    cancelledOrders[_account] = _nonce;
+  }
+
+  function cancelOrder (bytes32 _hash) public signerOnly {
+  	cancelled[_hash] = true;
+  }
 }
 

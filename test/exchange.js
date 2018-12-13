@@ -213,6 +213,132 @@ contract("Exchange", function(accounts) {
 			await assertExchangeBalance(etherAddress, accounts[4], 0.0005);
 			await assertExchangeBalance(token.address, accounts[4], 0.2);
 		});
+
+		it("fails if the order has been bulk-cancelled", () => {
+			return new Promise(async (resolve, reject) => {
+				const maker = accounts[0];
+				const taker = accounts[1];
+				const giveToken = token.address;
+				const giveAmount = web3.toWei(100);
+				const takeToken = etherAddress;
+				const takeAmount = web3.toWei(0.005 * 100);
+				const amount = giveAmount;
+				const expiry = 100000;
+				const nonce = Date.now();
+				const makerFee = web3.toWei(0.001);
+				const takerFee = web3.toWei(0.002);
+				const order = Web3Utils.soliditySha3(
+					exchange.address,
+					maker,
+					giveToken,
+					giveAmount,
+					takeToken,
+					takeAmount,
+					nonce,
+					expiry
+				);
+				const signedOrder = web3.eth.sign(maker, order);
+				const makerSig = eutil.fromRpcSig(signedOrder);
+				const trade = Web3Utils.soliditySha3(
+					exchange.address,
+					order,
+					taker,
+					amount,
+					nonce
+				);
+				const signedTrade = web3.eth.sign(taker, trade);
+				const takerSig = eutil.fromRpcSig(signedTrade);
+				const addresses = [maker, taker, giveToken, takeToken];
+				const uints = [
+					giveAmount,
+					takeAmount,
+					amount,
+					nonce,
+					nonce,
+					makerFee,
+					takerFee,
+					expiry
+				];
+				const v = [makerSig.v, takerSig.v];
+				const rs = [
+					eutil.bufferToHex(makerSig.r),
+					eutil.bufferToHex(makerSig.s),
+					eutil.bufferToHex(takerSig.r),
+					eutil.bufferToHex(takerSig.s)
+				];
+
+				await exchange.bulkCancelOrders(maker, nonce);
+
+				try {
+					await exchange.trade(addresses, uints, v, rs);
+				} catch (err) {
+					resolve();
+				}
+			});
+		});
+
+		it("fails if the order has been cancelled", () => {
+			return new Promise(async (resolve, reject) => {
+				const maker = accounts[0];
+				const taker = accounts[1];
+				const giveToken = token.address;
+				const giveAmount = web3.toWei(100);
+				const takeToken = etherAddress;
+				const takeAmount = web3.toWei(0.005 * 100);
+				const amount = giveAmount;
+				const expiry = 100000;
+				const nonce = Date.now();
+				const makerFee = web3.toWei(0.001);
+				const takerFee = web3.toWei(0.002);
+				const order = Web3Utils.soliditySha3(
+					exchange.address,
+					maker,
+					giveToken,
+					giveAmount,
+					takeToken,
+					takeAmount,
+					nonce,
+					expiry
+				);
+				const signedOrder = web3.eth.sign(maker, order);
+				const makerSig = eutil.fromRpcSig(signedOrder);
+				const trade = Web3Utils.soliditySha3(
+					exchange.address,
+					order,
+					taker,
+					amount,
+					nonce
+				);
+				const signedTrade = web3.eth.sign(taker, trade);
+				const takerSig = eutil.fromRpcSig(signedTrade);
+				const addresses = [maker, taker, giveToken, takeToken];
+				const uints = [
+					giveAmount,
+					takeAmount,
+					amount,
+					nonce,
+					nonce,
+					makerFee,
+					takerFee,
+					expiry
+				];
+				const v = [makerSig.v, takerSig.v];
+				const rs = [
+					eutil.bufferToHex(makerSig.r),
+					eutil.bufferToHex(makerSig.s),
+					eutil.bufferToHex(takerSig.r),
+					eutil.bufferToHex(takerSig.s)
+				];
+
+				await exchange.cancelOrder(order);
+
+				try {
+					await exchange.trade(addresses, uints, v, rs);
+				} catch (err) {
+					resolve();
+				}
+			});
+		});
 	});
 
 	describe("airdrop", () => {
