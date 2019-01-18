@@ -6,21 +6,21 @@ import 'openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 contract Exchange {
 	using SafeMath for uint;
 
-  address public signer;
-  address public owner;
-  address public feeCollector;
+  	address public signer;
+  	address public owner;
+  	address public feeCollector;
 	uint public timelock;
 	mapping (address => uint) public lastActivity;
-  mapping (address => mapping (address => uint)) public balances;
-  mapping (bytes32 => uint) public orderFills;
-  mapping (bytes32 => bool) public withdrawn;
-  mapping (bytes32 => bool) public traded;
-  bool public airdropStatus;
+  	mapping (address => mapping (address => uint)) public balances;
+  	mapping (bytes32 => uint) public orderFills;
+  	mapping (bytes32 => bool) public withdrawn;
+  	mapping (bytes32 => bool) public traded;
+  	bool public airdropStatus;
 	address public airdropTokenAddress;
 	uint public airdropRatePerEth;
 	address public airdropAccountAddress;
 
-  event Deposit(address token, address account, uint amount, uint balance);
+  	event Deposit(address token, address account, uint amount, uint balance);
 	event Withdraw(address token, address account, uint amount, uint balance);
 	event Trade(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, address get, address give);
 
