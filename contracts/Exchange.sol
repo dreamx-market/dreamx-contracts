@@ -227,5 +227,9 @@ contract Exchange {
     function cancelOrder (bytes32 _hash) public signerOnly {
         cancelled[_hash] = true;
     }
+
+    function() external {
+        throw;
+    }
 }
 
