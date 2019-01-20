@@ -97,15 +97,15 @@ contract Exchange {
         if (_token == 0) {
             require(msg.value == _amount);
             balances[0][msg.sender] = balances[0][msg.sender].add(msg.value);
-    } else {
+        } else {
             require(msg.value == 0);
             balances[_token][msg.sender] = balances[_token][msg.sender].add(_amount);
             require(StandardToken(_token).transferFrom(msg.sender, this, _amount));
-    }
+        }
         emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender]);
     }
 
-    function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s, uint _fee) public signerOnly {
+    function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s, uint _fee) public signerOnly returns (bool success) {
         lastActivity[_account] = block.number;
         bytes32 hash = keccak256(abi.encodePacked(this, _token, _amount, _account, _nonce));
         require(!withdrawn[hash]);
@@ -125,7 +125,7 @@ contract Exchange {
         emit Withdraw(_token, _account, _amount, balances[_token][_account]);
     }
 
-    function withdrawEmergency(address _token, uint _amount) public {
+    function withdrawEmergency(address _token, uint _amount) public returns (bool success) {
         require(block.number.sub(lastActivity[msg.sender]) > timelock);
         lastActivity[msg.sender] = block.number;
         require(balances[_token][msg.sender] >= _amount);
@@ -138,7 +138,7 @@ contract Exchange {
         emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
     }
 
-    function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public signerOnly {
+    function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public signerOnly returns (bool success) {
         /*
             _addresses[0] == maker
             _addresses[1] == taker
