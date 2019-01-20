@@ -122,9 +122,6 @@ contract("Exchange", function(accounts) {
 			await assertExchangeBalance(etherAddress, accounts[0], 0.5);
 		});
 
-		it.skip("withdraw returns a boolean", async () => {});
-		it.skip("withdrawEmergency returns a boolean", async () => {});
-
 		it("should withdraw if owner has user's signature for the operation", async () => {
 			const feeCollector = await exchange.feeCollector.call();
 			assert.equal(feeCollector, accounts[4]);
@@ -190,8 +187,6 @@ contract("Exchange", function(accounts) {
 	});
 
 	describe("trade", () => {
-		it.skip("returns a boolean", async () => {});
-
 		it("should do a balance swap when an order is filled", async () => {
 			const maker = accounts[0];
 			const taker = accounts[1];
