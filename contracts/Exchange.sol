@@ -23,6 +23,7 @@ contract Exchange {
     event Deposit(address token, address account, uint amount, uint balance);
     event Withdraw(address token, address account, uint amount, uint balance);
     event Trade(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, address get, address give);
+    event Order(address exchange, address maker, address giveToken, uint giveAmount, address takeToken, uint takeAmount, uint nonce, uint expiry, bytes payload, bytes32 orderHash);
 
     modifier signerOnly {
         require(msg.sender == signer);
