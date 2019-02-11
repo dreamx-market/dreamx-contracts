@@ -422,7 +422,7 @@ const trade = async (
 	giveAmount,
 	takeAmount
 ) => {
-	const expiry = 4705572264;
+	const expiry = 4705572264000;
 	const nonce = Date.now();
 	const makerFee = web3.toWei(0.001);
 	const takerFee = web3.toWei(0.002);
