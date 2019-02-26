@@ -6,7 +6,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
 contract Exchange {
     using SafeMath for uint;
 
-    address public signer;
+    address public server;
     address public owner;
     address public feeCollector;
     uint public timelock;
@@ -25,8 +25,8 @@ contract Exchange {
     event Trade(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, address get, address give);
     event Order(address exchange, address maker, address giveToken, uint giveAmount, address takeToken, uint takeAmount, uint nonce, uint expiry, bytes payload, bytes32 orderHash);
 
-    modifier signerOnly {
-        require(msg.sender == signer);
+    modifier serverOnly {
+        require(msg.sender == server);
         _;
     }
 
@@ -36,7 +36,7 @@ contract Exchange {
     }
 
     constructor() public {
-        signer = msg.sender;
+        server = msg.sender;
         feeCollector = msg.sender;
         owner = msg.sender;
         timelock = 100000;
@@ -63,8 +63,8 @@ contract Exchange {
         feeCollector = _feeCollector;
     }
 
-    function changeSigner(address _signer) public ownerOnly {
-        signer = _signer;
+    function changeServer(address _server) public ownerOnly {
+        server = _server;
     }
 
     function changeOwner(address _owner) public ownerOnly {
@@ -106,7 +106,7 @@ contract Exchange {
         emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender]);
     }
 
-    function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s, uint _fee) public signerOnly {
+    function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s, uint _fee) public serverOnly {
         lastActivity[_account] = block.number;
         bytes32 hash = keccak256(abi.encodePacked(this, _token, _amount, _account, _nonce));
         require(!withdrawn[hash]);
@@ -139,7 +139,7 @@ contract Exchange {
         emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
     }
 
-    function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public signerOnly {
+    function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public serverOnly {
         /*
             _addresses[0] == maker
             _addresses[1] == taker
@@ -220,12 +220,12 @@ contract Exchange {
     mapping (address => uint256) public cancelledOrders;
     mapping (bytes32 => bool) public cancelled;
     
-    function bulkCancelOrders(address _account, uint256 _nonce) public signerOnly {
+    function bulkCancelOrders(address _account, uint256 _nonce) public serverOnly {
         require(_nonce > cancelledOrders[_account]);
         cancelledOrders[_account] = _nonce;
     }
 
-    function cancelOrder (bytes32 _hash) public signerOnly {
+    function cancelOrder (bytes32 _hash) public serverOnly {
         cancelled[_hash] = true;
     }
 
