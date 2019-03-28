@@ -1,4 +1,5 @@
 const Web3 = require("web3");
+const Tx = require("ethereumjs-tx");
 const Exchange = require("../build/contracts/Exchange.json");
 
 const ether_address = "0x0000000000000000000000000000000000000000";
@@ -25,7 +26,7 @@ web3.eth.defaultAccount = accounts[0];
   // salted_withdraw_hash 0x57ee40e282c0627136602d28f425df0fbcba91bc8375cda45e2b4e96839e8533
   // signature: 0xc15d5e26c28a79bf21f5b22deca5ff223e8ba44c819d7810ff41ef1558971da46f979f1b370d38d452f8eb8e00bde6ba92ee1db91e247fedd7bded81e62d88d91c
 
-  const token = ether_address;
+  const token = "0x0000000000000000000000000000000000000000";
   const amount = 100000000000000000000;
   const account = "0xe37a4faa73fced0a177da51d8b62d02764f2fc45";
   const nonce = 1551375034000;
