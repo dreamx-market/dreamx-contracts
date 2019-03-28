@@ -8,6 +8,10 @@ const exchange_address = "0x8137064a86006670d407c24e191b5a55da5b2889";
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 const exchange = web3.eth.contract(Exchange.abi).at(exchange_address);
 const accounts = web3.eth.accounts;
+const privateKey = Buffer.from(
+  "d15b17f51f613d0d89c64c7b629ffff7ae9c19e509afc9518dac1650e9812c18",
+  "hex"
+);
 web3.eth.defaultAccount = accounts[0];
 
 (async () => {
@@ -36,5 +40,36 @@ web3.eth.defaultAccount = accounts[0];
   const s =
     "0x6f979f1b370d38d452f8eb8e00bde6ba92ee1db91e247fedd7bded81e62d88d9";
   const fee = 0;
-  await exchange.withdraw(token, amount, account, nonce, v, r, s, fee);
+
+  const data = exchange.withdraw.getData(
+    token,
+    amount,
+    account,
+    nonce,
+    v,
+    r,
+    s,
+    fee
+  );
+  const gasLimit = 6721975;
+  const gasPrice = 20000000000;
+  const txNonce = await web3.eth.getTransactionCount(account);
+  const rawTx = {
+    from: account,
+    gas: gasLimit,
+    to: exchange_address,
+    nonce: txNonce,
+    gasPrice: gasPrice,
+    data: data
+  };
+  const tx = new Tx(rawTx);
+  tx.sign(privateKey);
+  const serializedTx = "0x" + tx.serialize().toString("hex");
+  console.log(serializedTx);
+  // web3.eth.sendRawTransaction(serializedTx, function(err, hash) {
+  //   if (!err) {
+  //     console.log(hash);
+  //   }
+  // });
+  // await exchange.withdraw(token, amount, account, nonce, v, r, s, fee);
 })();
