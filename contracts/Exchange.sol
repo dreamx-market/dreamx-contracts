@@ -16,6 +16,7 @@ contract Exchange {
     mapping (bytes32 => bool) public withdrawn;
     mapping (bytes32 => bool) public traded;
     bool public airdropStatus;
+    bool public manualWithdraws;
     address public airdropTokenAddress;
     uint public airdropRatePerEth;
     address public airdropAccountAddress;
@@ -41,10 +42,16 @@ contract Exchange {
         owner = msg.sender;
         timelock = 100000;
         airdropAccountAddress = msg.sender;
+        airdropStatus = false;
+        manualWithdraws = false;
     }
 
     function setAirdropStatus(bool _status) public ownerOnly {
         airdropStatus = _status;
+    }
+
+    function setManualWithdraws(bool _status) public ownerOnly {
+        manualWithdraws = _status;
     }
 
     function setAirdropTokenAddress(address _address) public ownerOnly {
@@ -127,6 +134,7 @@ contract Exchange {
     }
 
     function withdrawEmergency(address _token, uint _amount) public {
+        require(manualWithdraws);
         require(block.number.sub(lastActivity[msg.sender]) > timelock);
         lastActivity[msg.sender] = block.number;
         require(balances[_token][msg.sender] >= _amount);

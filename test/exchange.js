@@ -149,6 +149,37 @@ contract("Exchange", function(accounts) {
       await assertExchangeBalance(etherAddress, accounts[4], 0.015);
     });
 
+    it("can use withdrawEmergency if it is enabled", async () => {
+      await exchange.setTimelock(3, { from: accounts[9] });
+      await exchange.setManualWithdraws(true, { from: accounts[9] });
+
+      await exchange.deposit(etherAddress, web3.toWei(0.5), {
+        value: web3.toWei(0.5)
+      });
+
+      await mine(5);
+
+      assert.ok(
+        await exchange.withdrawEmergency(etherAddress, web3.toWei(0.1))
+      );
+    });
+
+    it("cannot use withdrawEmergency if it is disabled", async () => {
+      await exchange.setTimelock(3, { from: accounts[9] });
+
+      await exchange.deposit(etherAddress, web3.toWei(0.5), {
+        value: web3.toWei(0.5)
+      });
+
+      await mine(5);
+
+      await assertFail(
+        exchange.withdrawEmergency,
+        etherAddress,
+        web3.toWei(0.1)
+      );
+    });
+
     it("cannot withdraw before timelock's expiry", async () => {
       await assertFail(
         exchange.withdrawEmergency,
@@ -159,17 +190,12 @@ contract("Exchange", function(accounts) {
 
     it("should withdraw after timelock's expiry", async () => {
       await exchange.setTimelock(3, { from: accounts[9] });
+      await exchange.setManualWithdraws(true, { from: accounts[9] });
       await exchange.deposit(etherAddress, web3.toWei(0.5), {
         value: web3.toWei(0.5)
       });
 
-      for (let i = 0; i < 5; i++) {
-        await web3.eth.sendTransaction({
-          from: accounts[1],
-          to: accounts[2],
-          value: web3.toWei(0.01)
-        });
-      }
+      await mine(5);
 
       assert.ok(
         await exchange.withdrawEmergency(etherAddress, web3.toWei(0.1))
@@ -402,88 +428,98 @@ contract("Exchange", function(accounts) {
       await assertExchangeBalance(airdrop.address, accounts[0], 9950);
     });
   });
-});
 
-const trade = async (
-  maker,
-  taker,
-  amount,
-  giveToken,
-  takeToken,
-  giveAmount,
-  takeAmount
-) => {
-  const expiry = 4705572264000;
-  const nonce = Date.now();
-  const makerFee = web3.toWei(0.001);
-  const takerFee = web3.toWei(0.002);
-  const order = Web3Utils.soliditySha3(
-    exchange.address,
+  const trade = async (
     maker,
-    giveToken,
-    giveAmount,
-    takeToken,
-    takeAmount,
-    nonce,
-    expiry
-  );
-  const signedOrder = web3.eth.sign(maker, order);
-  const makerSig = eutil.fromRpcSig(signedOrder);
-  const trade = Web3Utils.soliditySha3(
-    exchange.address,
-    order,
     taker,
     amount,
-    nonce
-  );
-  const signedTrade = web3.eth.sign(taker, trade);
-  const takerSig = eutil.fromRpcSig(signedTrade);
-  const addresses = [maker, taker, giveToken, takeToken];
-  const uints = [
+    giveToken,
+    takeToken,
     giveAmount,
-    takeAmount,
-    amount,
-    nonce,
-    nonce,
-    makerFee,
-    takerFee,
-    expiry
-  ];
-  const v = [makerSig.v, takerSig.v];
-  const rs = [
-    eutil.bufferToHex(makerSig.r),
-    eutil.bufferToHex(makerSig.s),
-    eutil.bufferToHex(takerSig.r),
-    eutil.bufferToHex(takerSig.s)
-  ];
-  await exchange.trade(addresses, uints, v, rs);
-};
-
-const assertExchangeBalance = async (token, account, expectedBalance) => {
-  const balance = web3.fromWei(
-    (await exchange.balances.call(token, account)).toNumber()
-  );
-  assert.equal(balance, expectedBalance);
-};
-
-const assertExchangeBalanceAtLeast = async (
-  token,
-  account,
-  expectedBalance
-) => {
-  const balance = web3.fromWei(
-    (await exchange.balances.call(token, account)).toNumber()
-  );
-  assert.isAtLeast(balance, expectedBalance);
-};
-
-const assertFail = async (fn, ...args) => {
-  try {
-    assert.fail(await fn(...args));
-  } catch (err) {
-    assert.equal(
-      err.message,
-      "VM Exception while processing transaction: revert"
+    takeAmount
+  ) => {
+    const expiry = 4705572264000;
+    const nonce = Date.now();
+    const makerFee = web3.toWei(0.001);
+    const takerFee = web3.toWei(0.002);
+    const order = Web3Utils.soliditySha3(
+      exchange.address,
+      maker,
+      giveToken,
+      giveAmount,
+      takeToken,
+      takeAmount,
+      nonce,
+      expiry
     );
-  }
-};
+    const signedOrder = web3.eth.sign(maker, order);
+    const makerSig = eutil.fromRpcSig(signedOrder);
+    const trade = Web3Utils.soliditySha3(
+      exchange.address,
+      order,
+      taker,
+      amount,
+      nonce
+    );
+    const signedTrade = web3.eth.sign(taker, trade);
+    const takerSig = eutil.fromRpcSig(signedTrade);
+    const addresses = [maker, taker, giveToken, takeToken];
+    const uints = [
+      giveAmount,
+      takeAmount,
+      amount,
+      nonce,
+      nonce,
+      makerFee,
+      takerFee,
+      expiry
+    ];
+    const v = [makerSig.v, takerSig.v];
+    const rs = [
+      eutil.bufferToHex(makerSig.r),
+      eutil.bufferToHex(makerSig.s),
+      eutil.bufferToHex(takerSig.r),
+      eutil.bufferToHex(takerSig.s)
+    ];
+    await exchange.trade(addresses, uints, v, rs);
+  };
+
+  const assertExchangeBalance = async (token, account, expectedBalance) => {
+    const balance = web3.fromWei(
+      (await exchange.balances.call(token, account)).toNumber()
+    );
+    assert.equal(balance, expectedBalance);
+  };
+
+  const assertExchangeBalanceAtLeast = async (
+    token,
+    account,
+    expectedBalance
+  ) => {
+    const balance = web3.fromWei(
+      (await exchange.balances.call(token, account)).toNumber()
+    );
+    assert.isAtLeast(balance, expectedBalance);
+  };
+
+  const assertFail = async (fn, ...args) => {
+    try {
+      assert.fail(await fn(...args));
+    } catch (err) {
+      assert.equal(
+        err.message,
+        "VM Exception while processing transaction: revert"
+      );
+    }
+  };
+
+  const mine = async blocks => {
+    for (let i = 0; i < blocks; i++) {
+      await web3.eth.sendTransaction({
+        from: accounts[1],
+        to: accounts[2],
+        value: web3.toWei(0.01)
+      });
+    }
+  };
+});
