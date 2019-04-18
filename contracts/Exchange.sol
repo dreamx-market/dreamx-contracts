@@ -13,7 +13,6 @@ contract Exchange {
     mapping (address => uint) public lastActivity;
     mapping (address => mapping (address => uint)) public balances;
     mapping (bytes32 => uint) public orderFills;
-    mapping (bytes32 => bool) public withdrawn;
     mapping (bytes32 => bool) public traded;
     bool public airdropStatus;
     bool public manualWithdraws;
@@ -113,12 +112,8 @@ contract Exchange {
         emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender]);
     }
 
-    function withdraw(address _token, uint _amount, address _account, uint _nonce, uint8 v, bytes32 r, bytes32 s, uint _fee) public serverOnly {
+    function withdraw(address _token, uint _amount, address _account, uint _fee) public serverOnly {
         lastActivity[_account] = block.number;
-        bytes32 hash = keccak256(abi.encodePacked(this, _token, _amount, _account, _nonce));
-        require(!withdrawn[hash]);
-        withdrawn[hash] = true;
-        require(recover(hash, v, r, s) == _account);
         require(balances[_token][_account] >= _amount);
         balances[_token][_account] = balances[_token][_account].sub(_amount);
         if (_fee > 50 finney) _fee = 50 finney;
@@ -238,7 +233,7 @@ contract Exchange {
     }
 
     function() external {
-        throw;
+        revert();
     }
 }
 

@@ -120,31 +120,9 @@ contract("Exchange", function(accounts) {
       const token = etherAddress;
       const amount = web3.toWei(0.3);
       const account = accounts[0];
-      const nonce = Date.now();
       const fee = web3.toWei(999);
 
-      const msg = Web3Utils.soliditySha3(
-        exchange.address,
-        token,
-        amount,
-        account,
-        nonce
-      );
-      const signedMsg = web3.eth.sign(account, msg);
-      const { v, r, s } = eutil.fromRpcSig(signedMsg);
-
-      assert.ok(
-        await exchange.withdraw(
-          etherAddress,
-          amount,
-          account,
-          nonce,
-          v,
-          eutil.bufferToHex(r),
-          eutil.bufferToHex(s),
-          fee
-        )
-      );
+      assert.ok(await exchange.withdraw(token, amount, account, fee));
       await assertExchangeBalance(etherAddress, accounts[0], 0.2);
       await assertExchangeBalance(etherAddress, accounts[4], 0.015);
     });

@@ -227,11 +227,11 @@ library RedBlackTree {
         }
     }
 
-    function grandparent(Tree storage tree, uint64 n) private returns (uint64) {
+    function grandparent(Tree storage tree, uint64 n) private view returns (uint64) {
         return tree.items[tree.items[n].parent].parent;
     }
 
-    function uncle(Tree storage tree, uint64 n) private returns (uint64) {
+    function uncle(Tree storage tree, uint64 n) private view returns (uint64) {
         uint64 g = grandparent(tree, n);
         if (g == 0)
             return 0;
@@ -241,7 +241,7 @@ library RedBlackTree {
         return tree.items[g].left;
     }
 
-    function sibling(Tree storage tree, uint64 n) private returns (uint64) {
+    function sibling(Tree storage tree, uint64 n) private view returns (uint64) {
         uint64 p = tree.items[n].parent;
         if (n == tree.items[p].left) {
             return tree.items[p].right;
