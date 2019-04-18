@@ -4,14 +4,15 @@ const HDWalletProvider = require("truffle-hdwallet-provider");
 module.exports = {
   networks: {
     development: {
-      host: "localhost",
-      port: 8545,
-      network_id: "*"
+      provider: () =>
+        new HDWalletProvider(process.env.DEV_MNEMONIC, "http://localhost:8545"),
+      network_id: "*",
+      gas: 4700000
     },
     "rinkeby-infura": {
       provider: () =>
         new HDWalletProvider(
-          process.env.RINKEBY_MNEMONIC,
+          process.env.PROD_MNEMONIC,
           "https://rinkeby.infura.io/pVTvEWYTqXvSRvluzCCe"
         ),
       network_id: "4",
@@ -20,7 +21,7 @@ module.exports = {
     "ropsten-infura": {
       provider: () =>
         new HDWalletProvider(
-          process.env.DEPLOY_PRIVATE_KEY,
+          process.env.PROD_MNEMONIC,
           "https://ropsten.infura.io/v3/b41fd9db5b3442a5b3be799b1bc91bf0"
         ),
       network_id: "3",
