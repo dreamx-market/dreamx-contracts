@@ -14,6 +14,7 @@
 # Running the test suite
 
 * clone this repo
-* `npm install`
-* create a .env file using .env.sample
+* `yarn install`
+* create a .env file by copying .env.sample
+* start ganache-cli
 * truffle test
