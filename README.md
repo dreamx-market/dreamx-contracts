@@ -14,5 +14,6 @@
 # Running the test suite
 
 * clone this repo
+* `npm install`
 * create a .env file using .env.sample
 * truffle test
