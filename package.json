@@ -1,5 +1,5 @@
 {
-	"name": "odin-contracts",
+	"name": "dreamx-contracts",
 	"version": "1.0.0",
 	"description": "",
 	"main": "truffle-config.js",
@@ -11,14 +11,14 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/odintrade/odin-contracts.git"
+		"url": "git+https://github.com/hieudoan2609/dreamx-contracts.git"
 	},
 	"author": "",
 	"license": "ISC",
 	"bugs": {
-		"url": "https://github.com/odintrade/odin-contracts/issues"
+		"url": "https://github.com/hieudoan2609/dreamx-contracts/issues"
 	},
-	"homepage": "https://github.com/odintrade/odin-contracts#readme",
+	"homepage": "https://github.com/hieudoan2609/dreamx-contracts#readme",
 	"dependencies": {
 		"dotenv": "^6.0.0",
 		"ethereumjs-util": "^5.2.0",
