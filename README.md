@@ -8,7 +8,12 @@
 
 ## Production:
 
-* generate a single-use mnemonic seed with ganache-cli, in the truffle project, replace MNEMONIC_PROD in /.env with it, fund the first address, make sure it has been funded sufficiently using MyEtherWallet, deploy with `truffle migrate --reset`, change the admin addresses, remove the remaining funds from the single-use address 
+* generate a single-use mnemonic seed with ganache-cli
+* in the truffle project, replace MNEMONIC_PROD in /.env with it
+* fund the first address, make sure it has been funded sufficiently using MyEtherWallet 
+* deploy with `truffle migrate --reset --network [NETWORK]`, replace [NETWORK] with the network to deploy to
+* change the admin addresses (owner, server, feeCollector)
+* remove the remaining funds from the single-use address 
 
 # Running the test suite
 
