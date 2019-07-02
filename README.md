@@ -9,4 +9,4 @@
 ## Production:
 
 * generate a single-use mnemonic seed with ganache-cli, in the truffle project, replace PROD_MNEMONIC in /.env with it, fund the first address, make sure it has been funded sufficiently using MyEtherWallet, deploy with `truffle migrate --reset`, change the admin addresses, remove the remaining funds from the single-use address 
-* update ENV['CONTRACT_ADDRESS'] in `config/application.rb`, ssh into the server and open `~/ninjatrade-api/.rbenv-vars`, if CONTRACT_ADDRESS has been set, update that as well
+* update ENV['CONTRACT_ADDRESS'] in `config/application.rb`, ssh into the server and open `~/dreamx-api/.rbenv-vars`, if CONTRACT_ADDRESS has been set, update that as well
