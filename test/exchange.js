@@ -29,6 +29,32 @@ contract("Exchange", function(accounts) {
     await assertExchangeBalance(etherAddress, accounts[1], 1);
   });
 
+  it("requires taker to have a sufficient balance", () => {
+    return new Promise(async (resolve, reject) => {
+      const maker = accounts[0];
+      const taker = accounts[2];
+      const giveToken = token.address;
+      const giveAmount = web3.toWei(100);
+      const takeToken = etherAddress;
+      const takeAmount = web3.toWei(0.005 * 100);
+      const amount = giveAmount;
+
+      try {
+        await trade(
+          maker,
+          taker,
+          amount,
+          giveToken,
+          takeToken,
+          giveAmount,
+          takeAmount
+        );
+      } catch (err) {
+        resolve();
+      }
+    })
+  })
+
   describe("public maintenance", () => {
     it("owner can change fee account's address", async () => {
       const currentFeeCollector = await exchange.feeCollector.call();
