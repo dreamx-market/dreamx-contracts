@@ -4,8 +4,8 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 contract Converter {
   using SafeMath for uint;
-  
-  constructor() {
+
+  constructor() public {
   }
 
   function calculateTakeAmount(uint _giveAmount, uint _totalGive, uint _totalTake) public pure returns (uint) {
