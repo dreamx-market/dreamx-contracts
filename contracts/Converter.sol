@@ -17,4 +17,9 @@ contract Converter {
     uint giveAmount = _totalGive.mul(_takeAmount).div(_totalTake);
     return giveAmount;
   }
+
+  function calculateFee(uint _amount, uint _fee) public pure returns (uint) {
+    uint feeAmount = _fee.mul(_amount).div(1 ether);
+    return feeAmount;
+  }
 }

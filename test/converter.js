@@ -10,7 +10,15 @@ contract('converter', function(accounts) {
     const calculatedGiveAmount = await converter.calculateGiveAmount(takeAmount, totalGive, totalTake)
     const calculatedTakeAmount = await converter.calculateTakeAmount(calculatedGiveAmount, totalGive, totalTake)
 
-    console.log(calculatedGiveAmount.toString())
-    console.log(calculatedTakeAmount.toString())
+    // console.log(calculatedGiveAmount.toString())
+    // console.log(calculatedTakeAmount.toString())
+
+    const makerFee = "1000000000000000"
+    const takerFee = "2000000000000000"
+    const makerFeeAmount = await converter.calculateFee(calculatedTakeAmount, makerFee)
+    const takerFeeAmount = await converter.calculateFee(calculatedGiveAmount, takerFee)
+
+    console.log(makerFeeAmount.toString())
+    console.log(takerFeeAmount.toString())
   });
 });
