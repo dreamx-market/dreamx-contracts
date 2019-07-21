@@ -12,7 +12,7 @@
 * restore `./migrations/1_initial_migration.js` to its initial state
 * run `./scripts/setup_dev_contract.js`, make sure the constant `fee_collector_address` match with `ENV['FEE_COLLECTOR_ADDRESS']` on the API and the constant `server_address` is the public address for `ENV['SERVER_PRIVATE_KEY']` on the API
 * remove the empty `chaindata` folder, run `mv .chaindata chaindata` to save the new dev chain
-* update ENV['CONTRACT_ADDRESS'] for test environment
+* update ENV['CONTRACT_ADDRESS'] for test environment it it has changed
 * update the library artifacts in /lib/contract/artifacts and the library code responsible for interacting with the contract to accomodate the new changes
 
 ## Production:
