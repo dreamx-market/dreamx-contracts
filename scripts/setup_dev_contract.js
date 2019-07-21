@@ -48,9 +48,9 @@ web3.eth.defaultAccount = accounts[0];
   );
 
   console.log(`deposited ${deposited_eth} ETH for ${accounts[0]}`);
-  console.log(`deposited ${deposited_token_one} ONE ${accounts[0]}`);
-  console.log(`deposited ${deposited_token_two} TWO ${accounts[0]}`);
-  console.log(`deposited ${deposited_eth_2} ETH ${accounts[1]}`);
+  console.log(`deposited ${deposited_token_one} ONE for ${accounts[0]}`);
+  console.log(`deposited ${deposited_token_two} TWO for ${accounts[0]}`);
+  console.log(`deposited ${deposited_eth_2} ETH for ${accounts[1]}`);
 
   await exchange.changeServer(server_address);
   await exchange.changeFeeCollector(fee_collector_address);
