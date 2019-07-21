@@ -7,6 +7,10 @@ const ether_address = "0x0000000000000000000000000000000000000000";
 const token_one_address = "0x8137064a86006670d407c24e191b5a55da5b2889";
 const token_two_address = "0x75d417ab3031d592a781e666ee7bfc3381ad33d5";
 
+// MUST MATCH WITH ENV['FEE_COLLECTOR_ADDRESS'] AND ENV['SERVER_PRIVATE_KEY'] ON API
+const server_address = "0xa77344043e0b0bada9318f41803e07e9dfc57b0b";
+const fee_collector_address = "0xcc6cfe1a7f27f84309697beeccbc8112a6b7240a";
+
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
 const exchange = web3.eth.contract(Exchange.abi).at(exchange_address);
 const token_one = web3.eth.contract(Token.abi).at(token_one_address);
@@ -48,7 +52,9 @@ web3.eth.defaultAccount = accounts[0];
   console.log(`deposited ${deposited_token_two} TWO ${accounts[0]}`);
   console.log(`deposited ${deposited_eth_2} ETH ${accounts[1]}`);
 
-  await exchange.changeServer(accounts[1]);
+  await exchange.changeServer(server_address);
+  await exchange.changeFeeCollector(fee_collector_address);
 
-  console.log(`changed server to: ${accounts[1]}`);
+  console.log(`server address is: ${server_address}`);
+  console.log(`fee collector address is: ${fee_collector_address}`);
 })();
