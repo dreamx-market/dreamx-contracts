@@ -8,4 +8,5 @@ module.exports = async function(deployer) {
   // deployer.deploy(Migrations);
   deployer.deploy(Exchange);
   // deployer.deploy(Token, "1000000000000000000000");
+  // deployer.deploy(Token, "1000000000000000000000");
 };
