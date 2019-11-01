@@ -178,6 +178,7 @@ contract Exchange {
         require(orderFills[orderHash].add(_uints[2]) <= _uints[0]);
         uint totalTradedAmount = _uints[0];
         if (_addresses[3] == 0) totalTradedAmount = _uints[1];
+        // takerFee = takerFee * fillAmount / 1 ether
         uint takerFee = (_uints[6].mul(_uints[2])).div(1 ether);
         if (useFeeToken[_addresses[1]]) {
             if (balances[feeTokenAddress][_addresses[1]] >= totalTradedAmount.mul(feeTokenRatePerEth)) {
@@ -185,9 +186,13 @@ contract Exchange {
                 balances[feeTokenAddress][_addresses[1]] = balances[feeTokenAddress][_addresses[1]].sub(totalTradedAmount.mul(feeTokenRatePerEth));
             }
         }
+        // makerGive = makerGive - fillAmount
         balances[_addresses[2]][_addresses[0]] = balances[_addresses[2]][_addresses[0]].sub(_uints[2]);
+        // takerGive = takerGive + fillAmount - takerFee
         balances[_addresses[2]][_addresses[1]] = balances[_addresses[2]][_addresses[1]].add((_uints[2]).sub(takerFee));
+        // feeGive = feeGive + takerFee
         balances[_addresses[2]][feeCollector] = balances[_addresses[2]][feeCollector].add(takerFee);
+        // makerFee = makerFee * (takeAmount * fillAmount / giveAmount) / 1 ether
         uint makerFee = (_uints[5].mul(_uints[1].mul(_uints[2]).div(_uints[0]))).div(1 ether);
         if (useFeeToken[_addresses[0]]) {
             if (balances[feeTokenAddress][_addresses[0]] >= totalTradedAmount.mul(feeTokenRatePerEth)) {
@@ -195,8 +200,11 @@ contract Exchange {
                 balances[feeTokenAddress][_addresses[0]] = balances[feeTokenAddress][_addresses[0]].sub(totalTradedAmount.mul(feeTokenRatePerEth));
             }
         }
+        // makerTake = makerTake + (takeAmount * fillAmount / giveAmount) - makerFee
         balances[_addresses[3]][_addresses[0]] = balances[_addresses[3]][_addresses[0]].add((_uints[1].mul(_uints[2]).div(_uints[0])).sub(makerFee));
+        // takerTake = takerTake - (takeAmount * fillAmount / giveAmount)
         balances[_addresses[3]][_addresses[1]] = balances[_addresses[3]][_addresses[1]].sub(_uints[1].mul(_uints[2]).div(_uints[0]));
+        // feeTaker = feeTaker + makerFee
         balances[_addresses[3]][feeCollector] = balances[_addresses[3]][feeCollector].add(makerFee);
         orderFills[orderHash] = orderFills[orderHash].add(_uints[2]);
         if (airdropStatus) {
