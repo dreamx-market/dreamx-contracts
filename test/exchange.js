@@ -152,6 +152,10 @@ contract("Exchange", function(accounts) {
       assert.ok(await exchange.withdrawEmergency(etherAddress, web3.toWei(0.1)));
     })
 
+    it('the server can use setAccountManualWithdraws', async () => {
+      assert.ok(await exchange.setAccountManualWithdraws(accounts[0], true, { from: accounts[0] }));
+    })
+
     it("cannot use withdrawEmergency if it is disabled", async () => {
 
       await exchange.deposit(etherAddress, web3.toWei(0.5), {

@@ -34,6 +34,11 @@ contract Exchange {
         _;
     }
 
+    modifier ownerOrServerOnly {
+        require(msg.sender == owner || msg.sender == server);
+        _;
+    }
+
     constructor() public {
         server = msg.sender;
         feeCollector = msg.sender;
@@ -51,7 +56,7 @@ contract Exchange {
         contractManualWithdraws = _status;
     }
 
-    function setAccountManualWithdraws(address _account, bool _status) public ownerOnly {
+    function setAccountManualWithdraws(address _account, bool _status) public ownerOrServerOnly {
         accountManualWithdraws[_account] = _status;
     }
 
