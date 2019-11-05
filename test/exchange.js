@@ -73,19 +73,6 @@ contract("Exchange", function(accounts) {
       const newOwner = await exchange.owner.call();
       assert.equal(newOwner, accounts[1]);
     });
-
-    it("owner can change timelock duration", async () => {
-      const currentDuration = await exchange.timelock.call();
-      assert.equal(currentDuration, 100000);
-
-      await exchange.setTimelock(1000000, { from: accounts[9] });
-      const newDuration = await exchange.timelock.call();
-      assert.equal(newDuration, 1000000);
-    });
-
-    it("timelock duration cannot exceed 1 million blocks", async () => {
-      await assertFail(exchange.setTimelock, 1000001, { from: accounts[9] });
-    });
   });
 
   describe("read features", () => {
@@ -154,55 +141,27 @@ contract("Exchange", function(accounts) {
     });
 
     it("can use withdrawEmergency if it is enabled", async () => {
-      await exchange.setTimelock(3, { from: accounts[9] });
-      await exchange.setManualWithdraws(true, { from: accounts[9] });
-
-      await exchange.deposit(etherAddress, web3.toWei(0.5), {
-        value: web3.toWei(0.5)
-      });
-
-      await mine(5);
-
-      assert.ok(
-        await exchange.withdrawEmergency(etherAddress, web3.toWei(0.1))
-      );
+      await exchange.setContractManualWithdraws(true, { from: accounts[9] });
+      await exchange.deposit(etherAddress, web3.toWei(0.5), { value: web3.toWei(0.5) });
+      assert.ok(await exchange.withdrawEmergency(etherAddress, web3.toWei(0.1)));
     });
+
+    it('can use withdrawEmergency if it is selectively enabled', async () => {
+      await exchange.setAccountManualWithdraws(accounts[0], true, { from: accounts[9] });
+      await exchange.deposit(etherAddress, web3.toWei(0.5), { value: web3.toWei(0.5) });
+      assert.ok(await exchange.withdrawEmergency(etherAddress, web3.toWei(0.1)));
+    })
 
     it("cannot use withdrawEmergency if it is disabled", async () => {
-      await exchange.setTimelock(3, { from: accounts[9] });
 
       await exchange.deposit(etherAddress, web3.toWei(0.5), {
         value: web3.toWei(0.5)
       });
 
-      await mine(5);
-
       await assertFail(
         exchange.withdrawEmergency,
         etherAddress,
         web3.toWei(0.1)
-      );
-    });
-
-    it("cannot withdraw before timelock's expiry", async () => {
-      await assertFail(
-        exchange.withdrawEmergency,
-        etherAddress,
-        web3.toWei(0.1)
-      );
-    });
-
-    it("should withdraw after timelock's expiry", async () => {
-      await exchange.setTimelock(3, { from: accounts[9] });
-      await exchange.setManualWithdraws(true, { from: accounts[9] });
-      await exchange.deposit(etherAddress, web3.toWei(0.5), {
-        value: web3.toWei(0.5)
-      });
-
-      await mine(5);
-
-      assert.ok(
-        await exchange.withdrawEmergency(etherAddress, web3.toWei(0.1))
       );
     });
   });

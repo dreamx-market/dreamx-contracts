@@ -17,8 +17,5 @@ contract('converter', function(accounts) {
     const takerFee = "2000000000000000"
     const makerFeeAmount = await converter.calculateFee(calculatedTakeAmount, makerFee)
     const takerFeeAmount = await converter.calculateFee(calculatedGiveAmount, takerFee)
-
-    console.log(makerFeeAmount.toString())
-    console.log(takerFeeAmount.toString())
   });
 });

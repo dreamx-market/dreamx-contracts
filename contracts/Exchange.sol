@@ -9,13 +9,12 @@ contract Exchange {
     address public server;
     address public owner;
     address public feeCollector;
-    uint public timelock;
-    mapping (address => uint) public lastActivity;
     mapping (address => mapping (address => uint)) public balances;
     mapping (bytes32 => uint) public orderFills;
     mapping (bytes32 => bool) public traded;
     bool public airdropStatus;
-    bool public manualWithdraws;
+    bool public contractManualWithdraws;
+    mapping (address => bool) public accountManualWithdraws;
     address public airdropTokenAddress;
     uint public airdropRatePerEth;
     address public airdropAccountAddress;
@@ -39,18 +38,21 @@ contract Exchange {
         server = msg.sender;
         feeCollector = msg.sender;
         owner = msg.sender;
-        timelock = 100000;
         airdropAccountAddress = msg.sender;
         airdropStatus = false;
-        manualWithdraws = false;
+        contractManualWithdraws = false;
     }
 
     function setAirdropStatus(bool _status) public ownerOnly {
         airdropStatus = _status;
     }
 
-    function setManualWithdraws(bool _status) public ownerOnly {
-        manualWithdraws = _status;
+    function setContractManualWithdraws(bool _status) public ownerOnly {
+        contractManualWithdraws = _status;
+    }
+
+    function setAccountManualWithdraws(address _account, bool _status) public ownerOnly {
+        accountManualWithdraws[_account] = _status;
     }
 
     function setAirdropTokenAddress(address _address) public ownerOnly {
@@ -77,11 +79,6 @@ contract Exchange {
         owner = _owner;
     }
 
-    function setTimelock(uint _duration) public ownerOnly {
-        require(_duration <= 1000000);
-        timelock = _duration;
-    }
-
     mapping (address => bool) public useFeeToken;
     uint public feeTokenRatePerEth;
     bool public feeTokenStatus;
@@ -100,7 +97,6 @@ contract Exchange {
     }
 
     function deposit(address _token, uint _amount) public payable {
-        lastActivity[msg.sender] = block.number;
         if (_token == 0) {
             require(msg.value == _amount);
             balances[0][msg.sender] = balances[0][msg.sender].add(msg.value);
@@ -113,7 +109,6 @@ contract Exchange {
     }
 
     function withdraw(address _token, uint _amount, address _account, uint _fee) public serverOnly {
-        lastActivity[_account] = block.number;
         require(balances[_token][_account] >= _amount);
         balances[_token][_account] = balances[_token][_account].sub(_amount);
         if (_fee > 50 finney) _fee = 50 finney;
@@ -129,9 +124,7 @@ contract Exchange {
     }
 
     function withdrawEmergency(address _token, uint _amount) public {
-        require(manualWithdraws);
-        require(block.number.sub(lastActivity[msg.sender]) > timelock);
-        lastActivity[msg.sender] = block.number;
+        require(contractManualWithdraws || accountManualWithdraws[msg.sender]);
         require(balances[_token][msg.sender] >= _amount);
         balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
         if (_token == 0) {
@@ -162,8 +155,6 @@ contract Exchange {
             rs[2]..[3] == takerR, takerS
         */
         require(cancelledOrders[_addresses[0]] < _uints[3]);
-        lastActivity[_addresses[0]] = block.number;
-        lastActivity[_addresses[1]] = block.number;
         bytes32 orderHash = keccak256(abi.encodePacked(this, _addresses[0], _addresses[2], _uints[0], _addresses[3], _uints[1], _uints[3], _uints[7]));
         require(!cancelled[orderHash]);
         require(recover(orderHash, v[0], rs[0], rs[1]) == _addresses[0]);
