@@ -24,7 +24,7 @@
 * flatten Exchange.sol with https://github.com/poanetwork/solidity-flattener and verify on Etherscan with the "Optimization" option set to "yes"
 * change the admin addresses (owner, server, feeCollector)
 * remove the remaining funds from the single-use address
-* update CONTRACT_ADDRESS from .rbenv-vars in production server
+* re-deploy the server, updating CONTRACT_ADDRESS
 
 # Running the test suite
 
