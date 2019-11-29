@@ -23,7 +23,8 @@
 * deploy with `truffle migrate --reset --network [NETWORK]`, replace [NETWORK] with the network to deploy to
 * flatten Exchange.sol with https://github.com/poanetwork/solidity-flattener and verify on Etherscan with the "Optimization" option set to "yes"
 * change the admin addresses (owner, server, feeCollector)
-* remove the remaining funds from the single-use address 
+* remove the remaining funds from the single-use address
+* update CONTRACT_ADDRESS from .rbenv-vars in production server
 
 # Running the test suite
 
