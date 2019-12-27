@@ -1,5 +1,7 @@
-require("dotenv").config();
 const HDWalletProvider = require("truffle-hdwallet-provider");
+const { 
+  MNEMONIC
+} = require('./config')
 
 module.exports = {
   networks: {
@@ -12,7 +14,7 @@ module.exports = {
     "rinkeby-infura": {
       provider: () =>
         new HDWalletProvider(
-          process.env.MNEMONIC_PROD,
+          MNEMONIC,
           "https://rinkeby.infura.io/pVTvEWYTqXvSRvluzCCe"
         ),
       network_id: "4",
@@ -21,7 +23,7 @@ module.exports = {
     "ropsten-infura": {
       provider: () =>
         new HDWalletProvider(
-          process.env.MNEMONIC_PROD,
+          MNEMONIC,
           "https://ropsten.infura.io/v3/b41fd9db5b3442a5b3be799b1bc91bf0"
         ),
       network_id: "3",
