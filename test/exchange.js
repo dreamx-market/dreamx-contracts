@@ -4,27 +4,24 @@ const Exchange = artifacts.require("Exchange");
 const Token = artifacts.require("Token");
 
 contract("Exchange", function(accounts) {
-  const maker = accounts[0]
-  const taker = accounts[1]
-  const owner = accounts[2]
-  const feeCollector = accounts[3]
-  const server = accounts[4]
+  const server = accounts[0]
+  const maker = accounts[1]
+  const taker = accounts[2]
+  const owner = accounts[3]
+  const feeCollector = accounts[4]
 
   beforeEach(async () => {
     const tokenTotalSupply = "1000000000000000000000"; // 1000 units
-    token = await Token.new(tokenTotalSupply);
-    tokenAddress = token.address
-    etherAddress = "0x0000000000000000000000000000000000000000"
+    token = await Token.new(tokenTotalSupply, { from: maker });
     exchange = await Exchange.new();
+    tokenAddress = token.address
+    exchangeAddress = exchange.address
+    etherAddress = "0x0000000000000000000000000000000000000000"
     await exchange.changeFeeCollector(feeCollector);
-    await exchange.changeServer(server);
     await exchange.changeOwner(owner);
-    await token.approve(exchange.address, web3.toWei(100));
-    await exchange.deposit(tokenAddress, web3.toWei(100));
-    await exchange.deposit(etherAddress, web3.toWei(1), {
-      from: taker,
-      value: web3.toWei(1)
-    });
+    await token.approve(exchangeAddress, web3.toWei(100), { from: maker });
+    await exchange.deposit(tokenAddress, web3.toWei(100), { from: maker });
+    await exchange.deposit(etherAddress, web3.toWei(1), { from: taker, value: web3.toWei(1) });
   });
 
   it("requires taker to have a sufficient balance", async () => {
@@ -64,9 +61,7 @@ contract("Exchange", function(accounts) {
       const depositWatcher = exchange.Deposit();
       await assertExchangeBalance(etherAddress, maker, 0);
 
-      await exchange.deposit(etherAddress, web3.toWei(0.5), {
-        value: web3.toWei(0.5)
-      });
+      await exchange.deposit(etherAddress, web3.toWei(0.5), { from: maker, value: web3.toWei(0.5) });
 
       await assertExchangeBalance(etherAddress, maker, 0.5);
       const depositEvent = depositWatcher.get()[0].args;
@@ -79,8 +74,8 @@ contract("Exchange", function(accounts) {
       const depositWatcher = exchange.Deposit();
       await assertExchangeBalance(tokenAddress, maker, 100);
 
-      await token.approve(exchange.address, web3.toWei(100));
-      await exchange.deposit(tokenAddress, web3.toWei(0.5));
+      await token.approve(exchangeAddress, web3.toWei(100), { from: maker });
+      await exchange.deposit(tokenAddress, web3.toWei(0.5), { from: maker });
 
       await assertExchangeBalance(tokenAddress, maker, 100.5);
       const depositEvent = depositWatcher.get()[0].args;
@@ -91,8 +86,7 @@ contract("Exchange", function(accounts) {
   });
 
   describe("withdraw", () => {
-    it("should withdraw if owner has user's signature for the operation", async () => {
-      const tokenAddress = tokenAddress;
+    it("should withdraw a users balance", async () => {
       const amount = web3.toWei(3);
       const account = maker;
       const fee = web3.toWei(999);
@@ -105,247 +99,88 @@ contract("Exchange", function(accounts) {
 
     it("can use withdrawEmergency if it is enabled", async () => {
       await exchange.setContractManualWithdraws(true, { from: owner });
-      assert.ok(await exchange.withdrawEmergency(tokenAddress, web3.toWei(0.1)));
+      assert.ok(await exchange.withdrawEmergency(tokenAddress, web3.toWei(0.1), { from: maker }));
     });
 
     it('can use withdrawEmergency if it is selectively enabled', async () => {
       await exchange.setAccountManualWithdraws(maker, true, { from: owner });
-      assert.ok(await exchange.withdrawEmergency(tokenAddress, web3.toWei(0.1)));
+      assert.ok(await exchange.withdrawEmergency(tokenAddress, web3.toWei(0.1), { from: maker }));
     })
 
     it('the server can also use setAccountManualWithdraws', async () => {
-      assert.ok(await exchange.setAccountManualWithdraws(maker, true, { from: server }));
+      assert.ok(await exchange.setAccountManualWithdraws(maker, true));
     })
 
     it("cannot use withdrawEmergency if it hasnt been enabled", async () => {
-      await assertFail(exchange.withdrawEmergency, tokenAddress, web3.toWei(1));
+      await assertFail(exchange.withdrawEmergency, tokenAddress, web3.toWei(1), { from: maker });
     });
   });
 
   describe("trade", () => {
-    it.only("should swap balances once an order is filled", async () => {
+    it("should swap balances once an order is filled", async () => {
       const giveToken = tokenAddress;
-      const giveAmount = web3.toWei(1);
+      const giveAmount = web3.toWei(100);
       const takeToken = etherAddress;
       const takeAmount = web3.toWei(0.5);
       const amount = giveAmount;
 
       await trade({ maker, taker, giveToken, takeToken, giveAmount, takeAmount, amount });
-      // console.log(await getBalance(tokenAddress, maker))
-      // console.log(await getBalance(etherAddress, taker))
 
-      // await assertExchangeBalance(etherAddress, maker, 0.4995);
-      // await assertExchangeBalance(tokenAddress, accounts[0], 0);
-      // await assertExchangeBalance(tokenAddress, accounts[1], 99.8);
-      // await assertExchangeBalance(etherAddress, accounts[1], 0.5);
-      // await assertExchangeBalance(etherAddress, accounts[4], 0.0005);
-      // await assertExchangeBalance(tokenAddress, accounts[4], 0.2);
+      await assertExchangeBalance(etherAddress, maker, 0.4995);
+      await assertExchangeBalance(tokenAddress, maker, 0);
+      await assertExchangeBalance(tokenAddress, taker, 99.8);
+      await assertExchangeBalance(etherAddress, taker, 0.5);
+      await assertExchangeBalance(etherAddress, feeCollector, 0.0005);
+      await assertExchangeBalance(tokenAddress, feeCollector, 0.2);
     });
 
-    it("fails if the order has been bulk-cancelled", () => {
-      return new Promise(async (resolve, reject) => {
-        const maker = accounts[0];
-        const taker = accounts[1];
-        const giveToken = tokenAddress;
-        const giveAmount = web3.toWei(100);
-        const takeToken = etherAddress;
-        const takeAmount = web3.toWei(0.005 * 100);
-        const amount = giveAmount;
-        const expiry = 100000;
-        const nonce = Date.now();
-        const makerFee = web3.toWei(0.001);
-        const takerFee = web3.toWei(0.002);
-        const order = Web3Utils.soliditySha3(
-          exchange.address,
-          maker,
-          giveToken,
-          giveAmount,
-          takeToken,
-          takeAmount,
-          nonce,
-          expiry
-        );
-        const signedOrder = web3.eth.sign(maker, order);
-        const makerSig = eutil.fromRpcSig(signedOrder);
-        const trade = Web3Utils.soliditySha3(
-          exchange.address,
-          order,
-          taker,
-          amount,
-          nonce
-        );
-        const signedTrade = web3.eth.sign(taker, trade);
-        const takerSig = eutil.fromRpcSig(signedTrade);
-        const addresses = [maker, taker, giveToken, takeToken];
-        const uints = [
-          giveAmount,
-          takeAmount,
-          amount,
-          nonce,
-          nonce,
-          makerFee,
-          takerFee,
-          expiry
-        ];
-        const v = [makerSig.v, takerSig.v];
-        const rs = [
-          eutil.bufferToHex(makerSig.r),
-          eutil.bufferToHex(makerSig.s),
-          eutil.bufferToHex(takerSig.r),
-          eutil.bufferToHex(takerSig.s)
-        ];
+    it("fails if the order has been bulk-cancelled", async () => {
+      const nonce = Date.now() * 2; // trade() uses Date.now() for nonces
+      await exchange.bulkCancelOrders(maker, nonce);
 
-        await exchange.bulkCancelOrders(maker, nonce);
-
-        try {
-          await exchange.trade(addresses, uints, v, rs);
-        } catch (err) {
-          resolve();
-        }
-      });
-    });
-
-    it("fails if the order has been cancelled", () => {
-      return new Promise(async (resolve, reject) => {
-        const maker = accounts[0];
-        const taker = accounts[1];
-        const giveToken = tokenAddress;
-        const giveAmount = web3.toWei(100);
-        const takeToken = etherAddress;
-        const takeAmount = web3.toWei(0.005 * 100);
-        const amount = giveAmount;
-        const expiry = 100000;
-        const nonce = Date.now();
-        const makerFee = web3.toWei(0.001);
-        const takerFee = web3.toWei(0.002);
-        const order = Web3Utils.soliditySha3(
-          exchange.address,
-          maker,
-          giveToken,
-          giveAmount,
-          takeToken,
-          takeAmount,
-          nonce,
-          expiry
-        );
-        const signedOrder = web3.eth.sign(maker, order);
-        const makerSig = eutil.fromRpcSig(signedOrder);
-        const trade = Web3Utils.soliditySha3(
-          exchange.address,
-          order,
-          taker,
-          amount,
-          nonce
-        );
-        const signedTrade = web3.eth.sign(taker, trade);
-        const takerSig = eutil.fromRpcSig(signedTrade);
-        const addresses = [maker, taker, giveToken, takeToken];
-        const uints = [
-          giveAmount,
-          takeAmount,
-          amount,
-          nonce,
-          nonce,
-          makerFee,
-          takerFee,
-          expiry
-        ];
-        const v = [makerSig.v, takerSig.v];
-        const rs = [
-          eutil.bufferToHex(makerSig.r),
-          eutil.bufferToHex(makerSig.s),
-          eutil.bufferToHex(takerSig.r),
-          eutil.bufferToHex(takerSig.s)
-        ];
-
-        await exchange.cancelOrder(order);
-
-        try {
-          await exchange.trade(addresses, uints, v, rs);
-        } catch (err) {
-          resolve();
-        }
-      });
-    });
-  });
-
-  describe("airdrop", () => {
-    beforeEach(async () => {
-      airdrop = await Token.new();
-      await airdrop.initialize(
-        "AirdropToken",
-        "AIR",
-        unitsOneEthCanBuy,
-        totalSupply
-      );
-      await airdrop.approve(exchange.address, web3.toWei(10000));
-      await exchange.deposit(airdrop.address, web3.toWei(10000));
-      await exchange.changeAirdropAccountAddress(accounts[0], {
-        from: accounts[9]
-      });
-      await exchange.setAirdropStatus(true, { from: accounts[9] });
-      await exchange.setAirdropTokenAddress(airdrop.address, {
-        from: accounts[9]
-      });
-      await exchange.setAirdropRatePerEth(100, { from: accounts[9] });
-      await exchange.setFeeTokenRatePerEth(100, { from: accounts[9] });
-      await exchange.setFeeTokenStatus(true, { from: accounts[9] });
-      await exchange.setFeeTokenAddress(airdrop.address, { from: accounts[9] });
-    });
-
-    it("should airdrop an amount equivalent to the traded amount", async () => {
-      const maker = accounts[0];
-      const taker = accounts[1];
       const giveToken = tokenAddress;
       const giveAmount = web3.toWei(100);
       const takeToken = etherAddress;
-      const takeAmount = web3.toWei(0.005 * 100);
+      const takeAmount = web3.toWei(0.5);
       const amount = giveAmount;
 
-      await trade(
-        maker,
-        taker,
-        amount,
-        giveToken,
-        takeToken,
-        giveAmount,
-        takeAmount
-      );
-
-      await assertExchangeBalance(airdrop.address, accounts[0], 9950);
-      await assertExchangeBalance(airdrop.address, accounts[1], 50);
+      const args = { maker, taker, giveToken, takeToken, giveAmount, takeAmount, amount }
+      await assertFail(trade, args)
     });
 
-    it("can use airdrop tokens to pay for trading fee", async () => {
-      await exchange.setFeeTokenStatus(true, { from: accounts[9] });
-      const maker = accounts[0];
-      const taker = accounts[1];
+    it("fails if the order has been cancelled", async () => {
       const giveToken = tokenAddress;
       const giveAmount = web3.toWei(100);
       const takeToken = etherAddress;
-      const takeAmount = web3.toWei(0.005 * 100);
+      const takeAmount = web3.toWei(0.5);
       const amount = giveAmount;
 
-      await trade(
-        maker,
-        taker,
-        amount,
-        giveToken,
-        takeToken,
-        giveAmount,
-        takeAmount
-      );
+      const orderHash = generateOrderHash({ maker, giveToken, giveAmount, takeToken, takeAmount })
+      await exchange.cancelOrder(orderHash);
 
-      await assertExchangeBalance(airdrop.address, accounts[0], 9950);
+      const args = { maker, taker, giveToken, takeToken, giveAmount, takeAmount, amount, orderHash }
+      await assertFail(trade, args)
     });
   });
 
   // helpers
-  const trade = async ({ maker, taker, giveToken, giveAmount, takeToken, takeAmount, amount }) => {
-    const exchangeAddress = exchange.address
+  const generateOrderHash = ({ maker, giveToken, giveAmount, takeToken, takeAmount }) => {
     const nonce = Date.now();
     const expiry = 4705572264000;
-    const order = Web3Utils.soliditySha3(exchangeAddress, maker, giveToken, giveAmount, takeToken, takeAmount, nonce, expiry);
+    const orderHash = Web3Utils.soliditySha3(exchangeAddress, maker, giveToken, giveAmount, takeToken, takeAmount, nonce, expiry);
+    return orderHash
+  }
+
+  const generateTradeHash = ({ orderHash, taker, amount }) => {
+    const nonce = Date.now();
+    const tradeHash = Web3Utils.soliditySha3(exchangeAddress, orderHash, taker, amount, nonce);
+    return tradeHash
+  }
+
+  const trade = async ({ maker, taker, giveToken, giveAmount, takeToken, takeAmount, amount, orderHash }) => {
+    const nonce = Date.now();
+    const expiry = 4705572264000;
+    const order = orderHash || Web3Utils.soliditySha3(exchangeAddress, maker, giveToken, giveAmount, takeToken, takeAmount, nonce, expiry);
     const signedOrder = web3.eth.sign(maker, order);
     const makerSig = eutil.fromRpcSig(signedOrder);
 

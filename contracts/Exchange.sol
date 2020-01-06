@@ -12,12 +12,8 @@ contract Exchange {
     mapping (address => mapping (address => uint)) public balances;
     mapping (bytes32 => uint) public orderFills;
     mapping (bytes32 => bool) public traded;
-    bool public airdropStatus;
     bool public contractManualWithdraws;
     mapping (address => bool) public accountManualWithdraws;
-    address public airdropTokenAddress;
-    uint public airdropRatePerEth;
-    address public airdropAccountAddress;
 
     event Deposit(address token, address account, uint amount, uint balance);
     event Withdraw(address token, address account, uint amount, uint balance);
@@ -43,13 +39,7 @@ contract Exchange {
         server = msg.sender;
         feeCollector = msg.sender;
         owner = msg.sender;
-        airdropAccountAddress = msg.sender;
-        airdropStatus = false;
         contractManualWithdraws = false;
-    }
-
-    function setAirdropStatus(bool _status) public ownerOnly {
-        airdropStatus = _status;
     }
 
     function setContractManualWithdraws(bool _status) public ownerOnly {
@@ -58,18 +48,6 @@ contract Exchange {
 
     function setAccountManualWithdraws(address _account, bool _status) public ownerOrServerOnly {
         accountManualWithdraws[_account] = _status;
-    }
-
-    function setAirdropTokenAddress(address _address) public ownerOnly {
-        airdropTokenAddress = _address;
-    }
-
-    function setAirdropRatePerEth(uint _ratePerEth) public ownerOnly {
-        airdropRatePerEth = _ratePerEth;
-    } 
-
-    function changeAirdropAccountAddress(address _address) public ownerOnly {
-        airdropAccountAddress = _address;
     }
 
     function changeFeeCollector(address _feeCollector) public ownerOnly {
@@ -203,19 +181,6 @@ contract Exchange {
         // feeTaker = feeTaker + makerFee
         balances[_addresses[3]][feeCollector] = balances[_addresses[3]][feeCollector].add(makerFee);
         orderFills[orderHash] = orderFills[orderHash].add(_uints[2]);
-        if (airdropStatus) {
-            uint airdropAmount = totalTradedAmount.mul(airdropRatePerEth);
-            if (balances[airdropTokenAddress][airdropAccountAddress] >= airdropAmount) {
-                if (makerFee != 0) {
-                    balances[airdropTokenAddress][airdropAccountAddress] = balances[airdropTokenAddress][airdropAccountAddress].sub(airdropAmount);
-                    balances[airdropTokenAddress][_addresses[0]] = balances[airdropTokenAddress][_addresses[0]].add(airdropAmount);
-                }
-                if (takerFee != 0) {
-                    balances[airdropTokenAddress][airdropAccountAddress] = balances[airdropTokenAddress][airdropAccountAddress].sub(airdropAmount);
-                    balances[airdropTokenAddress][_addresses[1]] = balances[airdropTokenAddress][_addresses[1]].add(airdropAmount);
-                }
-            }
-        }
     }
 
     function recover(bytes32 _hash, uint8 v, bytes32 r, bytes32 s) private pure returns (address) {
@@ -225,19 +190,14 @@ contract Exchange {
     }
   
     mapping (address => uint256) public cancelledOrders;
-    mapping (bytes32 => bool) public cancelled;
-    
     function bulkCancelOrders(address _account, uint256 _nonce) public serverOnly {
         require(_nonce > cancelledOrders[_account]);
         cancelledOrders[_account] = _nonce;
     }
 
+    mapping (bytes32 => bool) public cancelled;
     function cancelOrder (bytes32 _hash) public serverOnly {
         cancelled[_hash] = true;
-    }
-
-    function() external {
-        revert();
     }
 }
 
