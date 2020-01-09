@@ -4,21 +4,28 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
 
 contract Exchange {
+    constructor() public {
+        server = msg.sender;
+        feeCollector = msg.sender;
+        owner = msg.sender;
+    }
+
     using SafeMath for uint;
 
+    bool public contractManualWithdraws;
     address public server;
     address public owner;
     address public feeCollector;
     mapping (address => mapping (address => uint)) public balances;
     mapping (bytes32 => uint) public orderFills;
     mapping (bytes32 => bool) public traded;
-    bool public contractManualWithdraws;
     mapping (address => bool) public accountManualWithdraws;
+    mapping (address => uint256) public cancelledOrders;
+    mapping (bytes32 => bool) public cancelled;
 
     event Deposit(address token, address account, uint amount, uint balance);
     event Withdraw(address token, address account, uint amount, uint balance);
-    event Trade(address tokenBuy, uint amountBuy, address tokenSell, uint amountSell, address get, address give);
-    event Order(address exchange, address maker, address giveToken, uint giveAmount, address takeToken, uint takeAmount, uint nonce, uint expiry, bytes payload, bytes32 orderHash);
+    event Trade(address giveToken, uint giveAmount, address takeToken, uint takeAmount, address maker, address taker);
 
     modifier serverOnly {
         require(msg.sender == server);
@@ -33,13 +40,6 @@ contract Exchange {
     modifier ownerOrServerOnly {
         require(msg.sender == owner || msg.sender == server);
         _;
-    }
-
-    constructor() public {
-        server = msg.sender;
-        feeCollector = msg.sender;
-        owner = msg.sender;
-        contractManualWithdraws = false;
     }
 
     function setContractManualWithdraws(bool _status) public ownerOnly {
@@ -60,23 +60,6 @@ contract Exchange {
 
     function changeOwner(address _owner) public ownerOnly {
         owner = _owner;
-    }
-
-    mapping (address => bool) public useFeeToken;
-    uint public feeTokenRatePerEth;
-    bool public feeTokenStatus;
-    address public feeTokenAddress;
-
-    function setFeeTokenRatePerEth(uint _rate) public ownerOnly {
-        feeTokenRatePerEth = _rate;
-    }
-
-    function setFeeTokenStatus(bool _status) public ownerOnly {
-        feeTokenStatus = _status;
-    }
-
-    function setFeeTokenAddress(address _address) public ownerOnly {
-        feeTokenAddress = _address;
     }
 
     function deposit(address _token, uint _amount) public payable {
@@ -154,12 +137,6 @@ contract Exchange {
         if (_addresses[3] == 0) totalTradedAmount = _uints[1];
         // takerFee = takerFee * fillAmount / 1 ether
         uint takerFee = (_uints[6].mul(_uints[2])).div(1 ether);
-        if (useFeeToken[_addresses[1]]) {
-            if (balances[feeTokenAddress][_addresses[1]] >= totalTradedAmount.mul(feeTokenRatePerEth)) {
-                takerFee = 0;
-                balances[feeTokenAddress][_addresses[1]] = balances[feeTokenAddress][_addresses[1]].sub(totalTradedAmount.mul(feeTokenRatePerEth));
-            }
-        }
         // makerGive = makerGive - fillAmount
         balances[_addresses[2]][_addresses[0]] = balances[_addresses[2]][_addresses[0]].sub(_uints[2]);
         // takerGive = takerGive + fillAmount - takerFee
@@ -168,36 +145,28 @@ contract Exchange {
         balances[_addresses[2]][feeCollector] = balances[_addresses[2]][feeCollector].add(takerFee);
         // makerFee = makerFee * (takeAmount * fillAmount / giveAmount) / 1 ether
         uint makerFee = (_uints[5].mul(_uints[1].mul(_uints[2]).div(_uints[0]))).div(1 ether);
-        if (useFeeToken[_addresses[0]]) {
-            if (balances[feeTokenAddress][_addresses[0]] >= totalTradedAmount.mul(feeTokenRatePerEth)) {
-                makerFee = 0;
-                balances[feeTokenAddress][_addresses[0]] = balances[feeTokenAddress][_addresses[0]].sub(totalTradedAmount.mul(feeTokenRatePerEth));
-            }
-        }
         // makerTake = makerTake + (takeAmount * fillAmount / giveAmount) - makerFee
         balances[_addresses[3]][_addresses[0]] = balances[_addresses[3]][_addresses[0]].add((_uints[1].mul(_uints[2]).div(_uints[0])).sub(makerFee));
         // takerTake = takerTake - (takeAmount * fillAmount / giveAmount)
         balances[_addresses[3]][_addresses[1]] = balances[_addresses[3]][_addresses[1]].sub(_uints[1].mul(_uints[2]).div(_uints[0]));
-        // feeTaker = feeTaker + makerFee
+        // feeTake = feeTake + makerFee
         balances[_addresses[3]][feeCollector] = balances[_addresses[3]][feeCollector].add(makerFee);
         orderFills[orderHash] = orderFills[orderHash].add(_uints[2]);
+    }
+  
+    function bulkCancelOrders(address _account, uint256 _nonce) public serverOnly {
+        require(_nonce > cancelledOrders[_account]);
+        cancelledOrders[_account] = _nonce;
+    }
+
+    function cancelOrder (bytes32 _hash) public serverOnly {
+        cancelled[_hash] = true;
     }
 
     function recover(bytes32 _hash, uint8 v, bytes32 r, bytes32 s) private pure returns (address) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
         bytes32 hash = keccak256(abi.encodePacked(prefix, _hash));
         return ecrecover(hash, v, r, s);
-    }
-  
-    mapping (address => uint256) public cancelledOrders;
-    function bulkCancelOrders(address _account, uint256 _nonce) public serverOnly {
-        require(_nonce > cancelledOrders[_account]);
-        cancelledOrders[_account] = _nonce;
-    }
-
-    mapping (bytes32 => bool) public cancelled;
-    function cancelOrder (bytes32 _hash) public serverOnly {
-        cancelled[_hash] = true;
     }
 }
 
