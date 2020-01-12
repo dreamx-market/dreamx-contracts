@@ -4,12 +4,6 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
 
 contract Exchange {
-    constructor() public {
-        server = msg.sender;
-        feeCollector = msg.sender;
-        owner = msg.sender;
-    }
-
     using SafeMath for uint;
 
     bool public contractManualWithdraws;
@@ -26,6 +20,12 @@ contract Exchange {
     event Deposit(address token, address account, uint amount, uint balance);
     event Withdraw(address token, address account, uint amount, uint balance);
     event Trade(address giveToken, uint giveAmount, address takeToken, uint takeAmount, address maker, address taker);
+
+    constructor() public {
+        server = msg.sender;
+        feeCollector = msg.sender;
+        owner = msg.sender;
+    }
 
     modifier serverOnly {
         require(msg.sender == server);
