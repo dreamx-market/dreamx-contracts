@@ -83,6 +83,11 @@ contract("Exchange", function(accounts) {
       assert.equal(depositEvent.account, maker);
       assert.equal(web3.fromWei(depositEvent.amount), 0.5);
     });
+
+    it("cannot deposit if exchange is inactive", async () => {
+      await exchange.setInactive(true, { from: owner })
+      await assertFail(exchange.deposit, etherAddress, web3.toWei(0.5), { from: maker, value: web3.toWei(0.5) });
+    })
   });
 
   describe("withdraw", () => {

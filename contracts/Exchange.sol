@@ -6,6 +6,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
 contract Exchange {
     using SafeMath for uint;
 
+    bool public inactive;
     bool public contractManualWithdraws;
     address public server;
     address public owner;
@@ -27,42 +28,51 @@ contract Exchange {
         owner = msg.sender;
     }
 
-    modifier serverOnly {
+    modifier onlyActive {
+        require(inactive == false);
+        _;
+    }
+
+    modifier onlyServer {
         require(msg.sender == server);
         _;
     }
 
-    modifier ownerOnly {
+    modifier onlyOwner {
         require(msg.sender == owner);
         _;
     }
 
-    modifier ownerOrServerOnly {
+    modifier onlyOwnerOrServer {
         require(msg.sender == owner || msg.sender == server);
         _;
     }
 
-    function setContractManualWithdraws(bool _status) public ownerOnly {
+    function setInactive(bool _status) public onlyOwner {
+      inactive = _status;
+    }
+
+    function setContractManualWithdraws(bool _status) public onlyOwner {
         contractManualWithdraws = _status;
     }
 
-    function setAccountManualWithdraws(address _account, bool _status) public ownerOrServerOnly {
+    function setAccountManualWithdraws(address _account, bool _status) public onlyOwnerOrServer {
         accountManualWithdraws[_account] = _status;
     }
 
-    function changeFeeCollector(address _feeCollector) public ownerOnly {
+    function changeFeeCollector(address _feeCollector) public onlyOwner {
         feeCollector = _feeCollector;
     }
 
-    function changeServer(address _server) public ownerOnly {
+    function changeServer(address _server) public onlyOwner {
         server = _server;
     }
 
-    function changeOwner(address _owner) public ownerOnly {
+    function changeOwner(address _owner) public onlyOwner {
         owner = _owner;
     }
 
-    function deposit(address _token, uint _amount) public payable {
+    function deposit(address _token, uint _amount) public payable onlyActive {
         if (_token == 0) {
             require(msg.value == _amount);
             balances[0][msg.sender] = balances[0][msg.sender].add(msg.value);
@@ -74,7 +84,7 @@ contract Exchange {
         emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender]);
     }
 
-    function withdraw(address _token, uint _amount, address _account, uint _fee) public serverOnly {
+    function withdraw(address _token, uint _amount, address _account, uint _fee) public onlyServer {
         require(balances[_token][_account] >= _amount);
         balances[_token][_account] = balances[_token][_account].sub(_amount);
         if (_fee > 50 finney) _fee = 50 finney;
@@ -101,7 +111,7 @@ contract Exchange {
         emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
     }
 
-    function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public serverOnly {
+    function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public onlyServer {
         /*
             _addresses[0] == maker
             _addresses[1] == taker
@@ -154,12 +164,12 @@ contract Exchange {
         orderFills[orderHash] = orderFills[orderHash].add(_uints[2]);
     }
   
-    function bulkCancelOrders(address _account, uint256 _nonce) public serverOnly {
+    function bulkCancelOrders(address _account, uint256 _nonce) public onlyServer {
         require(_nonce > cancelledOrders[_account]);
         cancelledOrders[_account] = _nonce;
     }
 
-    function cancelOrder (bytes32 _hash) public serverOnly {
+    function cancelOrder (bytes32 _hash) public onlyServer {
         cancelled[_hash] = true;
     }
 
