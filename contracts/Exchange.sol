@@ -96,6 +96,7 @@ contract Exchange {
   function eject() public {
     require(accountEjectedAt[msg.sender] == 0);
     accountEjectedAt[msg.sender] = block.number;
+    emit Ejection(msg.sender);
   }
 
   function directWithdraw(address _token, uint _amount) public onlyInactiveOrAccountEjected {
@@ -132,16 +133,14 @@ contract Exchange {
     require(!cancelled[orderHash]);
     require(recover(orderHash, v[0], rs[0], rs[1]) == _addresses[0]);
     bytes32 tradeHash = keccak256(abi.encodePacked(this, orderHash, _addresses[1], _uints[2], _uints[4]));
-    require(recover(tradeHash, v[1], rs[2], rs[3]) == _addresses[1]);
     require(!traded[tradeHash]);
+    require(recover(tradeHash, v[1], rs[2], rs[3]) == _addresses[1]);
     traded[tradeHash] = true;
     if (_uints[5] > 5 finney) _uints[5] = 5 finney;
     if (_uints[6] > 5 finney) _uints[6] = 5 finney;
     require(balances[_addresses[2]][_addresses[0]] >= _uints[2]);
     require(balances[_addresses[3]][_addresses[1]] >= _uints[1].mul(_uints[2]).div(_uints[0]));
     require(orderFills[orderHash].add(_uints[2]) <= _uints[0]);
-    uint totalTradedAmount = _uints[0];
-    if (_addresses[3] == 0) totalTradedAmount = _uints[1];
     // takerFee = takerFee * fillAmount / 1 ether
     uint takerFee = (_uints[6].mul(_uints[2])).div(1 ether);
     // makerGive = makerGive - fillAmount
@@ -171,7 +170,7 @@ contract Exchange {
     cancelledOrders[_account] = _nonce;
   }
 
-  function cancelOrder (bytes32 _hash) public onlyServer {
+  function cancelOrder(bytes32 _hash) public onlyServer {
     cancelled[_hash] = true;
   }
 

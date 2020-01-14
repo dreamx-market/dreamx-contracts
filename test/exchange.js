@@ -207,9 +207,12 @@ contract("Exchange", function(accounts) {
 
   describe("ejection", () => {
     it("ejects an account", async () => {
+      const ejectionWatcher = exchange.Ejection();
       const tx = await exchange.eject({ from: maker })
+      const ejectionEvent = ejectionWatcher.get()[0].args;
       const accountEjectedAt = await exchange.accountEjectedAt(maker)
       assert.equal(tx.receipt.blockNumber, accountEjectedAt.toNumber())
+      assert.equal(ejectionEvent.account, maker)
     })
 
     it("cannot ejects an account twice", async () => {
