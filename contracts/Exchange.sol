@@ -1,7 +1,7 @@
 pragma solidity ^0.4.22;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 contract Exchange {
   using SafeMath for uint;
@@ -82,7 +82,7 @@ contract Exchange {
 
   function depositToken(address _token, address _account, uint _amount) public onlyServer onlyActive {
     balances[_token][_account] = balances[_token][_account].add(_amount);
-    require(StandardToken(_token).transferFrom(_account, this, _amount));
+    require(ERC20(_token).transferFrom(_account, this, _amount));
     emit Deposit(_token, _account, _amount, balances[_token][_account]);
   }
 
@@ -96,7 +96,7 @@ contract Exchange {
     if (_token == 0) {
       require(_account.send(_amount));
     } else {
-      require(StandardToken(_token).transfer(_account, _amount));
+      require(ERC20(_token).transfer(_account, _amount));
     }
   }
 
@@ -107,7 +107,7 @@ contract Exchange {
     if (_token == 0) {
       require(msg.sender.send(_amount));
     } else {
-      require(StandardToken(_token).transfer(msg.sender, _amount));
+      require(ERC20(_token).transfer(msg.sender, _amount));
     }
   }
 
