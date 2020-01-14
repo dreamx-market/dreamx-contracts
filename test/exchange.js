@@ -113,22 +113,22 @@ contract("Exchange", function(accounts) {
       await assertExchangeBalance(tokenAddress, feeCollector, 0.15);
     });
 
-    it("can use withdrawEmergency if it is enabled", async () => {
+    it("can use directWithdraw if it is enabled", async () => {
       await exchange.setContractManualWithdraws(true, { from: owner });
-      assert.ok(await exchange.withdrawEmergency(tokenAddress, web3.toWei(0.1), { from: maker }));
+      assert.ok(await exchange.directWithdraw(tokenAddress, web3.toWei(0.1), { from: maker }));
     });
 
-    it('can use withdrawEmergency if it is selectively enabled', async () => {
+    it('can use directWithdraw if it is selectively enabled', async () => {
       await exchange.setAccountManualWithdraws(maker, true, { from: owner });
-      assert.ok(await exchange.withdrawEmergency(tokenAddress, web3.toWei(0.1), { from: maker }));
+      assert.ok(await exchange.directWithdraw(tokenAddress, web3.toWei(0.1), { from: maker }));
     })
 
     it('the server can also use setAccountManualWithdraws', async () => {
       assert.ok(await exchange.setAccountManualWithdraws(maker, true));
     })
 
-    it("cannot use withdrawEmergency if it hasnt been enabled", async () => {
-      await assertFail(exchange.withdrawEmergency, tokenAddress, web3.toWei(1), { from: maker });
+    it("cannot use directWithdraw if it hasnt been enabled", async () => {
+      await assertFail(exchange.directWithdraw, tokenAddress, web3.toWei(1), { from: maker });
     });
   });
 

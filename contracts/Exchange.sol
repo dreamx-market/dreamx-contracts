@@ -100,7 +100,7 @@ contract Exchange {
     }
   }
 
-  function withdrawEmergency(address _token, uint _amount) public {
+  function directWithdraw(address _token, uint _amount) public {
     require(contractManualWithdraws || accountManualWithdraws[msg.sender]);
     require(balances[_token][msg.sender] >= _amount);
     balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
