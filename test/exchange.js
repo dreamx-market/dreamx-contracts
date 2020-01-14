@@ -139,6 +139,24 @@ contract("Exchange", function(accounts) {
       await assertExchangeBalance(tokenAddress, feeCollector, 0.2);
     });
 
+    it("should swap balances with negative fee for maker", async () => {
+      await exchange.setNegativeFees(true, { from: owner })
+      const giveToken = tokenAddress;
+      const giveAmount = web3.toWei(100);
+      const takeToken = etherAddress;
+      const takeAmount = web3.toWei(0.5);
+      const amount = giveAmount;
+
+      await trade({ maker, taker, giveToken, takeToken, giveAmount, takeAmount, amount });
+
+      await assertExchangeBalance(etherAddress, maker, 0.5005);
+      await assertExchangeBalance(tokenAddress, maker, 0);
+      await assertExchangeBalance(tokenAddress, taker, 99.8);
+      await assertExchangeBalance(etherAddress, taker, 0.5);
+      await assertExchangeBalance(etherAddress, feeCollector, 0);
+      await assertExchangeBalance(tokenAddress, feeCollector, 0.2);
+    })
+
     it("fails if the order has been bulk-cancelled", async () => {
       const nonce = Date.now() * 2; // trade() uses Date.now() for nonces
       await exchange.bulkCancelOrders(maker, nonce);
