@@ -20,8 +20,6 @@ contract Exchange {
   mapping (bytes32 => bool) public cancelled;
 
   event Deposit(address token, address account, uint amount, uint balance);
-  event Withdraw(address token, address account, uint amount, uint balance);
-  event Trade(address giveToken, uint giveAmount, address takeToken, uint takeAmount, address maker, address taker);
 
   constructor() public {
     server = msg.sender;
@@ -101,7 +99,6 @@ contract Exchange {
     } else {
       require(StandardToken(_token).transfer(_account, _amount));
     }
-    emit Withdraw(_token, _account, _amount, balances[_token][_account]);
   }
 
   function withdrawEmergency(address _token, uint _amount) public {
@@ -113,7 +110,6 @@ contract Exchange {
     } else {
       require(StandardToken(_token).transfer(msg.sender, _amount));
     }
-    emit Withdraw(_token, msg.sender, _amount, balances[_token][msg.sender]);
   }
 
   function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public onlyServer {
