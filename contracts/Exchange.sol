@@ -6,29 +6,40 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 contract Exchange {
   using SafeMath for uint;
 
+  uint constant MAX_ACCOUNT_EJECTION_TIMELOCK = 100000;
   bool public negativeFees;
   bool public inactive;
-  bool public contractManualWithdraws;
+  uint public accountEjectionTimelock;
   address public server;
   address public owner;
   address public feeCollector;
   mapping (address => mapping (address => uint)) public balances;
   mapping (bytes32 => uint) public orderFills;
   mapping (bytes32 => bool) public traded;
-  mapping (address => bool) public accountManualWithdraws;
-  mapping (address => uint256) public cancelledOrders;
+  mapping (address => uint) public accountEjectedAt;
+  mapping (address => uint) public cancelledOrders;
   mapping (bytes32 => bool) public cancelled;
 
   event Deposit(address token, address account, uint amount, uint balance);
+  event Ejection(address account);
 
   constructor() public {
     server = msg.sender;
     feeCollector = msg.sender;
     owner = msg.sender;
+    accountEjectionTimelock = MAX_ACCOUNT_EJECTION_TIMELOCK;
   }
 
   modifier onlyActive {
     require(inactive == false);
+    _;
+  }
+
+  modifier onlyInactiveOrAccountEjected {
+    require(inactive || (
+      accountEjectedAt[msg.sender] != 0 && 
+      block.number.sub(accountEjectedAt[msg.sender]) > accountEjectionTimelock
+    ));
     _;
   }
 
@@ -42,38 +53,20 @@ contract Exchange {
     _;
   }
 
-  modifier onlyOwnerOrServer {
-    require(msg.sender == owner || msg.sender == server);
-    _;
+  function setAccountEjectionTimelock(uint value) public onlyOwner {
+    require(value <= MAX_ACCOUNT_EJECTION_TIMELOCK);
+    accountEjectionTimelock = value;
   }
 
-  function setNegativeFees(bool _status) public onlyOwner {
-    negativeFees = _status;
-  }
+  function setNegativeFees(bool _status) public onlyOwner { negativeFees = _status; }
 
-  function setInactive(bool _status) public onlyOwner {
-    inactive = _status;
-  }
+  function deactivate() public onlyOwner { inactive = true; }
 
-  function setContractManualWithdraws(bool _status) public onlyOwner {
-    contractManualWithdraws = _status;
-  }
+  function changeFeeCollector(address _feeCollector) public onlyOwner { feeCollector = _feeCollector; }
 
-  function setAccountManualWithdraws(address _account, bool _status) public onlyOwnerOrServer {
-    accountManualWithdraws[_account] = _status;
-  }
+  function changeServer(address _server) public onlyOwner { server = _server; }
 
-  function changeFeeCollector(address _feeCollector) public onlyOwner {
-    feeCollector = _feeCollector;
-  }
-
-  function changeServer(address _server) public onlyOwner {
-    server = _server;
-  }
-
-  function changeOwner(address _owner) public onlyOwner {
-    owner = _owner;
-  }
+  function changeOwner(address _owner) public onlyOwner { owner = _owner; }
 
   function deposit() public payable onlyActive {
     balances[0][msg.sender] = balances[0][msg.sender].add(msg.value);
@@ -100,8 +93,12 @@ contract Exchange {
     }
   }
 
-  function directWithdraw(address _token, uint _amount) public {
-    require(contractManualWithdraws || accountManualWithdraws[msg.sender]);
+  function eject() public {
+    require(accountEjectedAt[msg.sender] == 0);
+    accountEjectedAt[msg.sender] = block.number;
+  }
+
+  function directWithdraw(address _token, uint _amount) public onlyInactiveOrAccountEjected {
     require(balances[_token][msg.sender] >= _amount);
     balances[_token][msg.sender] = balances[_token][msg.sender].sub(_amount);
     if (_token == 0) {
@@ -169,7 +166,7 @@ contract Exchange {
     orderFills[orderHash] = orderFills[orderHash].add(_uints[2]);
   }
  
-  function bulkCancelOrders(address _account, uint256 _nonce) public onlyServer {
+  function bulkCancelOrders(address _account, uint _nonce) public onlyServer {
     require(_nonce > cancelledOrders[_account]);
     cancelledOrders[_account] = _nonce;
   }

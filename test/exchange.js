@@ -47,12 +47,18 @@ contract("Exchange", function(accounts) {
       const newOwner = await exchange.owner.call();
       assert.equal(newOwner, maker);
     });
+
+    it("only owner can change accountEjectionTimelock", async () => {
+      assertOk(exchange.setAccountEjectionTimelock, 1000, { from: owner })
+      assert.equal(await exchange.accountEjectionTimelock(), 1000)
+      assertFail(exchange.setAccountEjectionTimelock, 0, { from: maker })
+      assert.equal(await exchange.accountEjectionTimelock(), 1000)
+    })
   });
 
   describe("read features", () => {
     it("retrieves user's balance", async () => {
-      const balance = await exchange.balances.call(tokenAddress, maker);
-      assert.ok(balance);
+      assertOk(exchange.balances, tokenAddress, maker)
     });
   });
 
@@ -93,7 +99,7 @@ contract("Exchange", function(accounts) {
     })
 
     it("cannot deposit if exchange is inactive", async () => {
-      await exchange.setInactive(true, { from: owner })
+      await exchange.deactivate({ from: owner })
       await token.approve(exchangeAddress, web3.toWei(0.5), { from: maker });
 
       await assertFail(exchange.deposit, { from: maker, value: web3.toWei(0.5) });
@@ -107,29 +113,31 @@ contract("Exchange", function(accounts) {
       const account = maker;
       const fee = web3.toWei(999);
 
-      assert.ok(await exchange.withdraw(tokenAddress, amount, account, fee));
+      assertOk(exchange.withdraw, tokenAddress, amount, account, fee)
 
-      await assertExchangeBalance(tokenAddress, maker, 97);
-      await assertExchangeBalance(tokenAddress, feeCollector, 0.15);
-    });
-
-    it("can use directWithdraw if it is enabled", async () => {
-      await exchange.setContractManualWithdraws(true, { from: owner });
-      assert.ok(await exchange.directWithdraw(tokenAddress, web3.toWei(0.1), { from: maker }));
-    });
-
-    it('can use directWithdraw if it is selectively enabled', async () => {
-      await exchange.setAccountManualWithdraws(maker, true, { from: owner });
-      assert.ok(await exchange.directWithdraw(tokenAddress, web3.toWei(0.1), { from: maker }));
+      await assertExchangeBalance(tokenAddress, maker, 97)
+      await assertExchangeBalance(tokenAddress, feeCollector, 0.15)
     })
 
-    it('the server can also use setAccountManualWithdraws', async () => {
-      assert.ok(await exchange.setAccountManualWithdraws(maker, true));
+    it("can use directWithdraw if exchange has been de-activated", async () => {
+      await exchange.deactivate({ from: owner })
+      assertOk(exchange.directWithdraw, tokenAddress, web3.toWei(0.1), { from: maker })
+    });
+
+    it('cannot use directWithdraw if account has only been ejected recently', async () => {
+      await exchange.setAccountEjectionTimelock(2, { from: owner })
+      await exchange.eject({ from: maker })
+      await mine(1)
+      assertFail(await exchange.directWithdraw, tokenAddress, web3.toWei(0.1), { from: maker })
     })
 
-    it("cannot use directWithdraw if it hasnt been enabled", async () => {
-      await assertFail(exchange.directWithdraw, tokenAddress, web3.toWei(1), { from: maker });
-    });
+    it('can use directWithdraw if account has been ejected and enough time has passed', async () => {
+      await exchange.setAccountEjectionTimelock(2, { from: owner })
+      await exchange.eject({ from: maker })
+      await mine(2)
+      assertOk(exchange.directWithdraw, tokenAddress, web3.toWei(0.1), { from: maker })
+      await assertExchangeBalance(tokenAddress, maker, 99.9);
+    })
   });
 
   describe("trade", () => {
@@ -197,6 +205,19 @@ contract("Exchange", function(accounts) {
     });
   });
 
+  describe("ejection", () => {
+    it("ejects an account", async () => {
+      const tx = await exchange.eject({ from: maker })
+      const accountEjectedAt = await exchange.accountEjectedAt(maker)
+      assert.equal(tx.receipt.blockNumber, accountEjectedAt.toNumber())
+    })
+
+    it("cannot ejects an account twice", async () => {
+      await assertOk(exchange.eject, { from: maker })
+      await assertFail(exchange.eject, { from: maker })
+    })
+  })
+
   // helpers
   const generateOrderHash = ({ maker, giveToken, giveAmount, takeToken, takeAmount }) => {
     const nonce = Date.now();
@@ -247,6 +268,10 @@ contract("Exchange", function(accounts) {
     } catch (err) {
       assert.equal(err.message, "VM Exception while processing transaction: revert");
     }
+  };
+
+  const assertOk = async (fn, ...args) => {
+    assert.ok(await fn(...args));
   };
 
   const mine = async blocks => {
