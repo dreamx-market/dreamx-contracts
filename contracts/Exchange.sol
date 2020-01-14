@@ -75,16 +75,15 @@ contract Exchange {
     owner = _owner;
   }
 
-  function deposit(address _token, uint _amount) public payable onlyActive {
-    if (_token == 0) {
-      require(msg.value == _amount);
-      balances[0][msg.sender] = balances[0][msg.sender].add(msg.value);
-    } else {
-      require(msg.value == 0);
-      balances[_token][msg.sender] = balances[_token][msg.sender].add(_amount);
-      require(StandardToken(_token).transferFrom(msg.sender, this, _amount));
-    }
-    emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender]);
+  function deposit() public payable onlyActive {
+    balances[0][msg.sender] = balances[0][msg.sender].add(msg.value);
+    emit Deposit(address(0), msg.sender, msg.value, balances[0][msg.sender]);
+  }
+
+  function depositToken(address _token, address _account, uint _amount) public onlyServer onlyActive {
+    balances[_token][_account] = balances[_token][_account].add(_amount);
+    require(StandardToken(_token).transferFrom(_account, this, _amount));
+    emit Deposit(_token, _account, _amount, balances[_token][_account]);
   }
 
   function withdraw(address _token, uint _amount, address _account, uint _fee) public onlyServer {
