@@ -21,25 +21,23 @@ web3.eth.defaultAccount = accounts[0];
 (async function() {
   const depositAmount = web3.toWei(1000);
 
-  await exchange.deposit(ether_address, depositAmount, {
-    value: depositAmount
-  });
-  await exchange.deposit(ether_address, depositAmount, {
-    value: depositAmount,
-    from: accounts[1]
-  });
   await token_one.approve(exchange.address, depositAmount);
   await token_two.approve(exchange.address, depositAmount);
 
+  await exchange.deposit({ value: depositAmount });
+  await exchange.depositToken(token_one.address, accounts[0], depositAmount);
+  await exchange.depositToken(token_two.address, accounts[0], depositAmount);
+  await exchange.deposit({ value: depositAmount, from: accounts[1] });
+
   const deposited_eth = web3.fromWei(await exchange.balances(ether_address, accounts[0]));
+  const deposited_token_one = web3.fromWei(await exchange.balances(token_one_address, accounts[0]));
+  const deposited_token_two = web3.fromWei(await exchange.balances(token_two_address, accounts[0]));
   const deposited_eth_2 = web3.fromWei(await exchange.balances(ether_address, accounts[1]));
-  const approved_token_one = web3.fromWei(await token_one.allowance(accounts[0], exchange.address));
-  const approved_token_two = web3.fromWei(await token_two.allowance(accounts[0], exchange.address));
 
   console.log(`deposited ${deposited_eth} ETH for ${accounts[0]}`);
+  console.log(`deposited ${deposited_token_one} ONE for ${accounts[0]}`);
+  console.log(`deposited ${deposited_token_two} TWO for ${accounts[0]}`);
   console.log(`deposited ${deposited_eth_2} ETH for ${accounts[1]}`);
-  console.log(`allowed ${approved_token_one} ONE for ${accounts[0]}`);
-  console.log(`allowed ${approved_token_two} TWO for ${accounts[0]}`);
 
   await exchange.changeServer(server_address);
   await exchange.changeFeeCollector(fee_collector_address);
