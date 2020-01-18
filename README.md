@@ -9,9 +9,11 @@
 * rebuild the dev chain by replacing the `chaindata` folder with an empty one, start ganache from it by running `rake ganache:up`
 * from the truffle project, go to `./migrations/1_initial_migration.js` and uncomment these lines to deploy the test tokens
   ```
-  const tokenTotalSupply = "1000000000000000000000"; // 1000 units
-  deployer.deploy(Token, tokenTotalSupply);
-  deployer.deploy(Token, tokenTotalSupply);
+  // const Token = artifacts.require("./Token.sol");
+  ...
+  // const tokenTotalSupply = "1000000000000000000000"; // 1000 units
+  // deployer.deploy(Token, tokenTotalSupply);
+  // deployer.deploy(Token, tokenTotalSupply);
   ```
 * deploy the exchange and token contracts with `truffle migrate --reset`
 * restore `./migrations/1_initial_migration.js` to its initial state
