@@ -11,7 +11,7 @@ module.exports = {
       network_id: "*",
       gas: 4700000
     },
-    "rinkeby-infura": {
+    "rinkeby": {
       provider: () =>
         new HDWalletProvider(
           MNEMONIC,
@@ -20,7 +20,7 @@ module.exports = {
       network_id: "4",
       gas: 4700000
     },
-    "ropsten-infura": {
+    "ropsten": {
       provider: () =>
         new HDWalletProvider(
           MNEMONIC,
