@@ -73,10 +73,10 @@ contract Exchange {
     emit Deposit(address(0), msg.sender, msg.value, balances[0][msg.sender]);
   }
 
-  function depositToken(address _token, address _account, uint _amount) public onlyServer onlyActive {
-    balances[_token][_account] = balances[_token][_account].add(_amount);
-    require(ERC20(_token).transferFrom(_account, this, _amount));
-    emit Deposit(_token, _account, _amount, balances[_token][_account]);
+  function depositToken(address _token, uint _amount) public onlyActive {
+    balances[_token][msg.sender] = balances[_token][msg.sender].add(_amount);
+    require(ERC20(_token).transferFrom(msg.sender, this, _amount));
+    emit Deposit(_token, msg.sender, _amount, balances[_token][msg.sender]);
   }
 
   function withdraw(address _token, uint _amount, address _account, uint _fee) public onlyServer {

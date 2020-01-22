@@ -20,7 +20,7 @@ contract("Exchange", function(accounts) {
     await exchange.changeFeeCollector(feeCollector);
     await exchange.changeOwner(owner);
     await token.approve(exchangeAddress, web3.toWei(100), { from: maker });
-    await exchange.depositToken(tokenAddress, maker, web3.toWei(100), { from: server });
+    await exchange.depositToken(tokenAddress, web3.toWei(100), { from: maker });
     await exchange.deposit({ from: taker, value: web3.toWei(1) });
   });
 
@@ -81,7 +81,7 @@ contract("Exchange", function(accounts) {
       await assertExchangeBalance(tokenAddress, maker, 100);
 
       await token.approve(exchangeAddress, web3.toWei(0.5), { from: maker });
-      await exchange.depositToken(tokenAddress, maker, web3.toWei(0.5), { from: server });
+      await exchange.depositToken(tokenAddress, web3.toWei(0.5), { from: maker });
 
       await assertExchangeBalance(tokenAddress, maker, 100.5);
       const depositEvent = depositWatcher.get()[0].args;
@@ -90,20 +90,12 @@ contract("Exchange", function(accounts) {
       assert.equal(web3.fromWei(depositEvent.amount), 0.5);
     });
 
-    it("cannot deposit tokens unless is server", async () => {
-      const depositWatcher = exchange.Deposit();
-      await assertExchangeBalance(tokenAddress, maker, 100);
-
-      await token.approve(exchangeAddress, web3.toWei(0.5), { from: maker });
-      await assertFail(exchange.depositToken, tokenAddress, maker, web3.toWei(0.5), { from: maker });
-    })
-
     it("cannot deposit if exchange is inactive", async () => {
       await exchange.deactivate({ from: owner })
       await token.approve(exchangeAddress, web3.toWei(0.5), { from: maker });
 
       await assertFail(exchange.deposit, { from: maker, value: web3.toWei(0.5) });
-      await assertFail(exchange.depositToken, tokenAddress, maker, web3.toWei(0.5), { from: server });
+      await assertFail(exchange.depositToken, tokenAddress, web3.toWei(0.5), { from: maker });
     })
   });
 
