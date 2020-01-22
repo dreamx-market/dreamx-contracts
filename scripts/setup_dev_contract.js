@@ -25,8 +25,8 @@ web3.eth.defaultAccount = accounts[0];
   await token_two.approve(exchange.address, depositAmount);
 
   await exchange.deposit({ value: depositAmount });
-  await exchange.depositToken(token_one.address, accounts[0], depositAmount);
-  await exchange.depositToken(token_two.address, accounts[0], depositAmount);
+  await exchange.depositToken(token_one.address, depositAmount);
+  await exchange.depositToken(token_two.address, depositAmount);
   await exchange.deposit({ value: depositAmount, from: accounts[1] });
 
   const deposited_eth = web3.fromWei(await exchange.balances(ether_address, accounts[0]));
