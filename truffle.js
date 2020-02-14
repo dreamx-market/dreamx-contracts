@@ -1,4 +1,5 @@
 const HDWalletProvider = require("truffle-hdwallet-provider");
+const Web3Utils = require("web3-utils");
 const { 
   MNEMONIC
 } = require('./config')
@@ -9,6 +10,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       network_id: "*",
+      gasPrice: Web3Utils.toWei("1", "gwei"),
       gas: 4700000
     },
     "rinkeby": {
@@ -18,6 +20,7 @@ module.exports = {
           "https://rinkeby.infura.io/pVTvEWYTqXvSRvluzCCe"
         ),
       network_id: "4",
+      gasPrice: Web3Utils.toWei("1", "gwei"),
       gas: 4700000
     },
     "ropsten": {
@@ -27,6 +30,7 @@ module.exports = {
           "https://ropsten.infura.io/v3/b41fd9db5b3442a5b3be799b1bc91bf0"
         ),
       network_id: "3",
+      gasPrice: Web3Utils.toWei("1", "gwei"),
       gas: 4700000
     }
   },

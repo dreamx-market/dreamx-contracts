@@ -28,6 +28,7 @@
 * generate a single-use mnemonic seed with ganache-cli
 * create a config.js file by copying config.js.sample, insert MNEMONIC with the single-use mnemonic
 * fund the first address, make sure it has been funded sufficiently using MyEtherWallet 
+* go to `truffle.js`, update `gasPrice` if necessary
 * deploy with `truffle migrate --reset --network [NETWORK]`, replace [NETWORK] with the network to deploy to
 * flatten Exchange.sol with https://github.com/poanetwork/solidity-flattener and verify on Etherscan with the "Optimization" option set to "yes"
 * change the admin addresses (owner, server, feeCollector)
