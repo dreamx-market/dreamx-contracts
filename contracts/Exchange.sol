@@ -109,7 +109,7 @@ contract Exchange {
     }
   }
 
-  function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public onlyServer {
+  function trade(address[] _addresses, uint[] _uints, uint8[] v, bytes32[] rs) public onlyActive onlyServer {
     /*
       _addresses[0] == maker
       _addresses[1] == taker
